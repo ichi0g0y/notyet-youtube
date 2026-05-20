@@ -8,6 +8,7 @@ let settings: Settings | null = null;
 let currentUrl = location.href;
 let observer: MutationObserver | null = null;
 let filterTimer: number | undefined;
+let syncTimer: number | undefined;
 
 void start();
 
@@ -67,6 +68,9 @@ function getCurrentTab(): ChannelTab | null {
 }
 
 function upsertButton(tab: ChannelTab): void {
+  const slot = document.querySelector<HTMLElement>("#buttons.ytd-masthead");
+  if (!slot) return;
+
   const existing = document.querySelector<HTMLButtonElement>(`#${BUTTON_ID}`);
   const button = existing ?? document.createElement("button");
 
@@ -82,7 +86,10 @@ function upsertButton(tab: ChannelTab): void {
     button.addEventListener("click", () => {
       void toggleCurrentTab();
     });
-    document.body.append(button);
+  }
+
+  if (button.parentElement !== slot) {
+    slot.prepend(button);
   }
 }
 
@@ -228,8 +235,14 @@ function handleNavigation(): void {
 function watchDomChanges(): void {
   observer?.disconnect();
   observer = new MutationObserver(() => {
+    if (!settings?.enabled || !isChannelContentTab()) return;
+
+    if (!document.querySelector(`#${BUTTON_ID}`)) {
+      requestSync();
+    }
+
     const tab = getCurrentTab();
-    if (settings?.enabled && tab && settings.activeTabs[tab]) {
+    if (tab && settings.activeTabs[tab]) {
       scheduleFilter(tab);
     }
   });
@@ -238,4 +251,9 @@ function watchDomChanges(): void {
     childList: true,
     subtree: true
   });
+}
+
+function requestSync(): void {
+  window.clearTimeout(syncTimer);
+  syncTimer = window.setTimeout(syncPage, 250);
 }
