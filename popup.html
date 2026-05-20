@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NotYet</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="panel">
+      <div class="heading">
+        <strong>NotYet</strong>
+        <span>YouTube filter</span>
+      </div>
+
+      <label class="toggle-row">
+        <span>
+          <strong>Enable filter</strong>
+          <small>Show controls on channel tabs</small>
+        </span>
+        <input id="enabled" type="checkbox">
+      </label>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

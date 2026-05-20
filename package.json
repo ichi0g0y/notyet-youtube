@@ -1,0 +1,16 @@
+{
+  "name": "notyet-youtube",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hide watched videos on YouTube channel pages.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && bun run scripts/build.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.10",
+    "@types/chrome": "^0.0.307",
+    "typescript": "^5.8.3"
+  }
+}
