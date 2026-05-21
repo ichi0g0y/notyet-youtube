@@ -1,34 +1,51 @@
-export type ChannelTab = "videos" | "shorts" | "live";
+export type Scope =
+  | "channel-videos"
+  | "channel-shorts"
+  | "channel-live"
+  | "subscriptions"
+  | "home";
 
 export type Settings = {
   enabled: boolean;
-  activeTabs: Record<ChannelTab, boolean>;
+  activeScopes: Record<Scope, boolean>;
 };
 
 const DEFAULT_SETTINGS: Settings = {
   enabled: true,
-  activeTabs: {
-    videos: false,
-    shorts: false,
-    live: false
+  activeScopes: {
+    "channel-videos": false,
+    "channel-shorts": false,
+    "channel-live": false,
+    subscriptions: false,
+    home: false
   }
 };
 
+type LegacyTabs = { videos?: boolean; shorts?: boolean; live?: boolean };
+
 export async function getSettings(): Promise<Settings> {
-  const stored = await chrome.storage.local.get(DEFAULT_SETTINGS);
+  const stored = await chrome.storage.local.get(["enabled", "activeScopes", "activeTabs"]);
+  const legacy = stored.activeTabs as LegacyTabs | undefined;
+  const next = stored.activeScopes as Partial<Record<Scope, boolean>> | undefined;
 
   return {
     enabled: stored.enabled ?? DEFAULT_SETTINGS.enabled,
-    activeTabs: {
-      videos: stored.activeTabs?.videos ?? DEFAULT_SETTINGS.activeTabs.videos,
-      shorts: stored.activeTabs?.shorts ?? DEFAULT_SETTINGS.activeTabs.shorts,
-      live: stored.activeTabs?.live ?? DEFAULT_SETTINGS.activeTabs.live
+    activeScopes: {
+      "channel-videos": next?.["channel-videos"] ?? legacy?.videos ?? false,
+      "channel-shorts": next?.["channel-shorts"] ?? legacy?.shorts ?? false,
+      "channel-live": next?.["channel-live"] ?? legacy?.live ?? false,
+      subscriptions: next?.subscriptions ?? false,
+      home: next?.home ?? false
     }
   };
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
-  await chrome.storage.local.set(settings);
+  await chrome.storage.local.set({
+    enabled: settings.enabled,
+    activeScopes: settings.activeScopes
+  });
+  await chrome.storage.local.remove("activeTabs");
 }
 
 export async function setEnabled(enabled: boolean): Promise<void> {
@@ -36,9 +53,9 @@ export async function setEnabled(enabled: boolean): Promise<void> {
 }
 
 export async function ensureDefaults(): Promise<void> {
-  const stored = await chrome.storage.local.get(["enabled", "activeTabs"]);
+  const stored = await chrome.storage.local.get(["enabled", "activeScopes", "activeTabs"]);
 
-  if (stored.enabled === undefined || stored.activeTabs === undefined) {
+  if (stored.enabled === undefined || (stored.activeScopes === undefined && stored.activeTabs === undefined)) {
     await chrome.storage.local.set(DEFAULT_SETTINGS);
   }
 }

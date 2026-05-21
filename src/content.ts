@@ -1,4 +1,4 @@
-import { type ChannelTab, getSettings, saveSettings, type Settings } from "./storage";
+import { getSettings, saveSettings, type Scope, type Settings } from "./storage";
 
 const BUTTON_ID = "notyet-toggle";
 const HIDDEN_ATTR = "data-notyet-hidden";
@@ -80,48 +80,46 @@ function syncPage(): void {
     return;
   }
 
-  const tab = isChannelContentTab() ? getCurrentTab() : null;
-  upsertButton(tab);
+  const scope = detectScope();
+  upsertButton(scope);
 
-  if (tab && settings.activeTabs[tab]) {
-    scheduleFilter(tab);
+  if (scope && settings.activeScopes[scope]) {
+    scheduleFilter(scope);
   } else {
     showHiddenCards();
   }
 }
 
-function isChannelContentTab(): boolean {
-  return /^\/(@[^/]+|channel\/[^/]+|c\/[^/]+|user\/[^/]+)\/(videos|shorts|streams|live)/.test(
-    location.pathname
-  );
-}
+const CHANNEL_TAB_PATTERN = /^\/(?:@[^/]+|channel\/[^/]+|c\/[^/]+|user\/[^/]+)\/(videos|shorts|streams|live)(?:\/|$)/;
 
-function getCurrentTab(): ChannelTab | null {
+function detectScope(): Scope | null {
   const path = location.pathname;
+  if (path === "/feed/subscriptions") return "subscriptions";
+  if (path === "/" || path === "") return "home";
 
-  if (path.includes("/shorts")) return "shorts";
-  if (path.includes("/streams") || path.includes("/live")) return "live";
-  if (path.includes("/videos")) return "videos";
-
-  return null;
+  const match = CHANNEL_TAB_PATTERN.exec(path);
+  if (!match) return null;
+  if (match[1] === "shorts") return "channel-shorts";
+  if (match[1] === "streams" || match[1] === "live") return "channel-live";
+  return "channel-videos";
 }
 
-function upsertButton(tab: ChannelTab | null): void {
+function upsertButton(scope: Scope | null): void {
   const slot = document.querySelector<HTMLElement>("#buttons.ytd-masthead");
   if (!slot) return;
 
   const existing = document.querySelector<HTMLButtonElement>(`#${BUTTON_ID}`);
   const button = existing ?? document.createElement("button");
-  const displayTab: ChannelTab = tab ?? "videos";
-  const active = Boolean(settings?.activeTabs[displayTab]);
-  const disabled = tab === null;
-  const labelText = disabled ? "Disabled" : labelFor(displayTab);
+  const displayScope: Scope = scope ?? "channel-videos";
+  const active = Boolean(settings?.activeScopes[displayScope]);
+  const disabled = scope === null;
+  const labelText = disabled ? "Disabled" : labelFor(displayScope);
 
   button.id = BUTTON_ID;
   button.className = "notyet-toggle";
   button.type = "button";
   button.disabled = disabled;
-  button.dataset.tab = displayTab;
+  button.dataset.scope = displayScope;
   button.dataset.active = String(active);
   button.setAttribute("aria-label", labelText);
   button.setAttribute("aria-pressed", String(active));
@@ -151,16 +149,14 @@ function upsertButton(tab: ChannelTab | null): void {
 
 async function toggleCurrentTab(): Promise<void> {
   if (!settings) return;
-  if (!isChannelContentTab()) return;
-
-  const tab = getCurrentTab();
-  if (!tab) return;
+  const scope = detectScope();
+  if (!scope) return;
 
   const nextSettings: Settings = {
     ...settings,
-    activeTabs: {
-      ...settings.activeTabs,
-      [tab]: !settings.activeTabs[tab]
+    activeScopes: {
+      ...settings.activeScopes,
+      [scope]: !settings.activeScopes[scope]
     }
   };
 
@@ -169,14 +165,18 @@ async function toggleCurrentTab(): Promise<void> {
   syncPage();
 }
 
-function labelFor(tab: ChannelTab): string {
-  switch (tab) {
-    case "videos":
+function labelFor(scope: Scope): string {
+  switch (scope) {
+    case "channel-videos":
       return "Hide watched videos";
-    case "shorts":
+    case "channel-shorts":
       return "Hide watched shorts";
-    case "live":
-      return "Hide watched live";
+    case "channel-live":
+      return "Hide watched streams";
+    case "subscriptions":
+      return "Hide watched (Subscriptions)";
+    case "home":
+      return "Hide watched (Home)";
   }
 }
 
@@ -184,15 +184,15 @@ function removeButton(): void {
   document.querySelector(`#${BUTTON_ID}`)?.remove();
 }
 
-function scheduleFilter(tab: ChannelTab): void {
+function scheduleFilter(scope: Scope): void {
   window.clearTimeout(filterTimer);
   filterTimer = window.setTimeout(() => {
-    hideWatchedCards(tab);
+    hideWatchedCards(scope);
   }, 120);
 }
 
-function hideWatchedCards(tab: ChannelTab): void {
-  for (const card of getCards(tab)) {
+function hideWatchedCards(scope: Scope): void {
+  for (const card of getCards(scope)) {
     if (isWatched(card)) {
       card.setAttribute(HIDDEN_ATTR, "true");
       card.style.display = "none";
@@ -210,19 +210,26 @@ function showHiddenCards(): void {
   }
 }
 
-function getCards(tab: ChannelTab): HTMLElement[] {
-  const selectors: Record<ChannelTab, string[]> = {
-    videos: ["ytd-rich-item-renderer", "ytd-rich-grid-media", "ytd-grid-video-renderer", "ytd-video-renderer"],
-    shorts: [
-      "ytd-rich-item-renderer",
-      "ytd-rich-grid-slim-media",
-      "ytd-reel-item-renderer",
-      "ytd-grid-video-renderer"
-    ],
-    live: ["ytd-rich-item-renderer", "ytd-rich-grid-media", "ytd-grid-video-renderer", "ytd-video-renderer"]
-  };
+function getCards(scope: Scope): HTMLElement[] {
+  if (scope === "home") {
+    return [
+      ...document.querySelectorAll<HTMLElement>(
+        "ytd-rich-grid-renderer > #contents > ytd-rich-item-renderer"
+      )
+    ];
+  }
 
-  return [...document.querySelectorAll<HTMLElement>(selectors[tab].join(","))].map(getCardRoot).filter(unique);
+  const selectors = [
+    "ytd-rich-item-renderer",
+    "yt-lockup-view-model",
+    "ytd-rich-grid-media",
+    "ytd-grid-video-renderer",
+    "ytd-video-renderer",
+    "ytd-rich-grid-slim-media",
+    "ytd-reel-item-renderer"
+  ];
+
+  return [...document.querySelectorAll<HTMLElement>(selectors.join(","))].map(getCardRoot).filter(unique);
 }
 
 function getCardRoot(node: HTMLElement): HTMLElement {
@@ -298,10 +305,9 @@ function watchDomChanges(): void {
       requestSync();
     }
 
-    if (!isChannelContentTab()) return;
-    const tab = getCurrentTab();
-    if (tab && settings.activeTabs[tab]) {
-      scheduleFilter(tab);
+    const scope = detectScope();
+    if (scope && settings.activeScopes[scope]) {
+      scheduleFilter(scope);
     }
   });
 
