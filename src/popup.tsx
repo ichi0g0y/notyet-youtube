@@ -23,6 +23,8 @@ const MESSAGES = {
     },
     removeShortsSection: "Hide Shorts shelves",
     removeShortsSectionHint: "Removes the Shorts row from Home / Subscriptions.",
+    hideHomeShelves: "Hide themed shelves on Home",
+    hideHomeShelvesHint: "Removes news / topic shelves on the Home feed.",
     skipTopRecommendations: "Keep top recommendations",
     skipTopRecommendationsHint: "Leaves the first items on Home untouched (they don't auto-refill).",
     topCountLabel: "Items to keep",
@@ -46,6 +48,8 @@ const MESSAGES = {
     },
     removeShortsSection: "Shorts シェルフを隠す",
     removeShortsSectionHint: "ホーム / 登録チャンネルの Shorts 行を消す。",
+    hideHomeShelves: "ホームのテーマ別シェルフを隠す",
+    hideHomeShelvesHint: "ニュース速報・トピック別おすすめなど横並びシェルフを消す。",
     skipTopRecommendations: "上部のおすすめは残す",
     skipTopRecommendationsHint: "ホーム先頭はフィルタしない（補填されないため）。",
     topCountLabel: "残す件数",
@@ -104,6 +108,13 @@ function App() {
           checked={settings.removeShortsSection}
           disabled={!settings.enabled}
           onChange={(checked) => update({ removeShortsSection: checked })}
+        />
+        <ToggleRow
+          label={t.hideHomeShelves}
+          hint={t.hideHomeShelvesHint}
+          checked={settings.hideHomeShelves}
+          disabled={!settings.enabled}
+          onChange={(checked) => update({ hideHomeShelves: checked })}
         />
         <ToggleRow
           label={t.skipTopRecommendations}

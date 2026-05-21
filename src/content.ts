@@ -1,6 +1,15 @@
-import { getSettings, saveSettings, type Scope, type Settings } from "./storage";
+import {
+  getSettings,
+  markWatched,
+  saveSettings,
+  type Scope,
+  type Settings,
+  unmarkWatched
+} from "./storage";
 
 const BUTTON_ID = "notyet-toggle";
+const MARK_BTN_CLASS = "notyet-mark-btn";
+const MARK_INJECTED_ATTR = "data-notyet-mark";
 const HIDDEN_ATTR = "data-notyet-hidden";
 const WATCHED_LABELS = ["Watched", "視聴済み"];
 
@@ -10,7 +19,9 @@ type MessageKey =
   | "label.channel-live"
   | "label.subscriptions"
   | "label.home"
-  | "label.disabled";
+  | "label.disabled"
+  | "label.mark"
+  | "label.unmark";
 
 type Locale = "en" | "ja";
 
@@ -21,7 +32,9 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     "label.channel-live": "Hide watched streams (Channel)",
     "label.subscriptions": "Hide watched (Subscriptions)",
     "label.home": "Hide watched (Home)",
-    "label.disabled": "Disabled"
+    "label.disabled": "Disabled",
+    "label.mark": "Mark as watched",
+    "label.unmark": "Unmark watched"
   },
   ja: {
     "label.channel-videos": "視聴済み動画を隠す（チャンネル）",
@@ -29,7 +42,9 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     "label.channel-live": "視聴済みライブを隠す（チャンネル）",
     "label.subscriptions": "視聴済みを隠す（登録チャンネル）",
     "label.home": "視聴済みを隠す（ホーム）",
-    "label.disabled": "無効"
+    "label.disabled": "無効",
+    "label.mark": "視聴済みにする",
+    "label.unmark": "視聴済みを解除"
   }
 };
 
@@ -93,6 +108,7 @@ let currentUrl = location.href;
 let observer: MutationObserver | null = null;
 let filterTimer: number | undefined;
 let syncTimer: number | undefined;
+let markTimer: number | undefined;
 
 void start();
 
@@ -102,8 +118,8 @@ async function start(): Promise<void> {
   watchNavigation();
   watchDomChanges();
 
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local") return;
+  chrome.storage.onChanged.addListener((_changes, area) => {
+    if (area !== "sync") return;
 
     void getSettings().then((nextSettings) => {
       settings = nextSettings;
@@ -124,6 +140,8 @@ function syncPage(): void {
   const scope = detectScope();
   upsertButton(scope);
   applyShortsSection(settings.removeShortsSection);
+  applyHomeShelves(scope === "home" ? settings.hideHomeShelves : false);
+  applyMarkButtons(scope);
 
   if (scope && settings.activeScopes[scope]) {
     scheduleFilter(scope);
@@ -267,6 +285,27 @@ function applyShortsSection(hide: boolean): void {
   }
 }
 
+const HOME_SHELF_ATTR = "data-notyet-home-shelf";
+
+function applyHomeShelves(hide: boolean): void {
+  const sections = document.querySelectorAll<HTMLElement>(
+    "ytd-rich-grid-renderer > #contents > ytd-rich-section-renderer"
+  );
+  for (const section of sections) {
+    if (section.getAttribute(SHORTS_SECTION_ATTR) === "true") continue; // Shorts is handled separately
+    section.style.display = hide ? "none" : "";
+    section.setAttribute(HOME_SHELF_ATTR, String(hide));
+  }
+  if (!hide) {
+    for (const section of document.querySelectorAll<HTMLElement>(
+      `[${HOME_SHELF_ATTR}="true"]`
+    )) {
+      section.style.display = "";
+      section.removeAttribute(HOME_SHELF_ATTR);
+    }
+  }
+}
+
 function getCards(scope: Scope): HTMLElement[] {
   if (scope === "home") {
     const items = [
@@ -302,10 +341,110 @@ function getCardRoot(node: HTMLElement): HTMLElement {
 }
 
 function isWatched(card: HTMLElement, threshold: number): boolean {
+  if (isManuallyWatched(card)) return true;
   if (hasWatchedAriaLabel(card)) return true;
   const ratio = progressRatio(card);
   if (ratio === null) return false;
   return ratio >= threshold;
+}
+
+function extractVideoId(card: HTMLElement): string | null {
+  const anchor = card.querySelector<HTMLAnchorElement>(
+    "a#thumbnail, a[href*='watch?v=']"
+  );
+  if (!anchor) return null;
+  try {
+    const url = new URL(anchor.href, location.origin);
+    return url.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
+
+function isManuallyWatched(card: HTMLElement): boolean {
+  if (!settings || settings.manuallyWatchedIds.length === 0) return false;
+  const id = extractVideoId(card);
+  if (!id) return false;
+  return settings.manuallyWatchedIds.includes(id);
+}
+
+const MARK_CARD_SELECTORS = [
+  "ytd-rich-item-renderer",
+  "yt-lockup-view-model",
+  "ytd-grid-video-renderer",
+  "ytd-video-renderer",
+  "ytd-rich-grid-media",
+  "ytd-rich-grid-slim-media",
+  "ytd-reel-item-renderer"
+];
+
+function getMarkableCards(): HTMLElement[] {
+  return [...document.querySelectorAll<HTMLElement>(MARK_CARD_SELECTORS.join(","))]
+    .map(getCardRoot)
+    .filter(unique);
+}
+
+function applyMarkButtons(scope: Scope | null): void {
+  if (!scope) return;
+  for (const card of getMarkableCards()) {
+    const id = extractVideoId(card);
+    if (!id) continue;
+    const container = findMenuContainer(card);
+    if (!container) continue;
+    const marked = settings?.manuallyWatchedIds.includes(id) ?? false;
+    upsertMarkButton(container, id, marked);
+  }
+}
+
+function findMenuContainer(card: HTMLElement): HTMLElement | null {
+  return (
+    card.querySelector<HTMLElement>(".ytLockupMetadataViewModelMenuButton") ??
+    card.querySelector<HTMLElement>("ytd-menu-renderer")
+  );
+}
+
+function upsertMarkButton(container: HTMLElement, videoId: string, marked: boolean): void {
+  let btn = container.querySelector<HTMLButtonElement>(`button.${MARK_BTN_CLASS}`);
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.className = MARK_BTN_CLASS;
+    btn.type = "button";
+    btn.setAttribute(MARK_INJECTED_ATTR, "true");
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void toggleMark(btn!);
+    });
+    container.append(btn);
+  }
+
+  if (btn.dataset.videoId !== videoId) {
+    btn.dataset.videoId = videoId;
+  }
+  const currentMarked = btn.dataset.marked === "true";
+  const needsRender = btn.childElementCount === 0 || currentMarked !== marked;
+  if (currentMarked !== marked) {
+    btn.dataset.marked = String(marked);
+    btn.setAttribute("aria-pressed", String(marked));
+    const label = marked ? t("label.unmark") : t("label.mark");
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+  }
+  if (needsRender) {
+    btn.replaceChildren(marked ? createViewHideIcon() : createViewIcon());
+  }
+}
+
+async function toggleMark(btn: HTMLButtonElement): Promise<void> {
+  const videoId = btn.dataset.videoId;
+  if (!videoId) return;
+  const marked = btn.dataset.marked === "true";
+  if (marked) {
+    await unmarkWatched(videoId);
+  } else {
+    await markWatched(videoId);
+  }
+  // storage.onChanged listener re-syncs UI automatically.
 }
 
 const PROGRESS_SELECTORS = [
@@ -381,15 +520,20 @@ function handleNavigation(): void {
 
 function watchDomChanges(): void {
   observer?.disconnect();
-  observer = new MutationObserver(() => {
+  observer = new MutationObserver((records) => {
     if (!settings?.enabled) return;
+
+    // Skip if all mutations are our own (avoid feedback loop)
+    if (records.every(isOwnMutation)) return;
 
     if (!document.querySelector(`#${BUTTON_ID}`)) {
       requestSync();
     }
 
     const scope = detectScope();
-    if (scope && settings.activeScopes[scope]) {
+    if (!scope) return;
+    scheduleMarkButtons(scope);
+    if (settings.activeScopes[scope]) {
       scheduleFilter(scope);
     }
   });
@@ -403,5 +547,24 @@ function watchDomChanges(): void {
 function requestSync(): void {
   window.clearTimeout(syncTimer);
   syncTimer = window.setTimeout(syncPage, 250);
+}
+
+function scheduleMarkButtons(scope: Scope): void {
+  window.clearTimeout(markTimer);
+  markTimer = window.setTimeout(() => applyMarkButtons(scope), 200);
+}
+
+function isOwnMutation(record: MutationRecord): boolean {
+  const target = record.target as HTMLElement;
+  if (
+    target.classList?.contains(MARK_BTN_CLASS) ||
+    target.closest?.(`.${MARK_BTN_CLASS}, #${BUTTON_ID}`)
+  ) {
+    return true;
+  }
+  for (const node of record.addedNodes) {
+    if (node instanceof HTMLElement && node.classList.contains(MARK_BTN_CLASS)) return true;
+  }
+  return false;
 }
 

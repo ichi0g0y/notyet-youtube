@@ -81,3 +81,58 @@ html[dark] .notyet-toggle[data-active="true"]:hover {
   opacity: 1;
   padding-left: 4px;
 }
+
+.ytLockupMetadataViewModelMenuButton,
+ytd-menu-renderer {
+  position: relative;
+}
+
+.notyet-mark-btn {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--yt-spec-text-primary, #0f0f0f);
+  cursor: pointer;
+  opacity: 0.7;
+  z-index: 10;
+  transition: background 150ms ease, opacity 150ms ease, transform 150ms ease;
+}
+
+html[dark] .notyet-mark-btn {
+  color: #f1f1f1;
+}
+
+.notyet-mark-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  opacity: 1;
+}
+
+html[dark] .notyet-mark-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notyet-mark-btn[data-marked="true"] {
+  background: #d56b2f;
+  color: #fff;
+  opacity: 1;
+}
+
+.notyet-mark-btn[data-marked="true"]:hover {
+  background: #a94c1c;
+}
+
+.notyet-mark-btn svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
