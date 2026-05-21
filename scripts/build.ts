@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { cp, mkdir, rm } from "node:fs/promises";
 
 await rm("dist", { force: true, recursive: true });
@@ -19,11 +20,16 @@ const results = await Promise.all([
     naming: "background.js"
   }),
   Bun.build({
-    entrypoints: ["src/popup.ts"],
+    entrypoints: ["src/popup.tsx"],
     outdir: "dist",
-    format: "esm",
+    format: "iife",
     target: "browser",
-    naming: "popup.js"
+    naming: "popup.js",
+    minify: true,
+    jsx: { runtime: "automatic", development: false },
+    define: {
+      "process.env.NODE_ENV": '"production"'
+    }
   })
 ]);
 
@@ -40,5 +46,17 @@ await Promise.all([
   cp("manifest.json", "dist/manifest.json"),
   cp("popup.html", "dist/popup.html"),
   cp("public/content.css", "dist/content.css"),
-  cp("public/popup.css", "dist/popup.css")
+  runTailwind()
 ]);
+
+function runTailwind(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      "bunx",
+      ["tailwindcss", "-i", "src/popup.css", "-o", "dist/popup.css", "--minify"],
+      { stdio: "inherit" }
+    );
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`tailwindcss exit ${code}`))));
+    child.on("error", reject);
+  });
+}

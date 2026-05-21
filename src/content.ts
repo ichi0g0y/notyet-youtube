@@ -117,11 +117,13 @@ function syncPage(): void {
     window.clearTimeout(filterTimer);
     removeButton();
     showHiddenCards();
+    applyShortsSection(false);
     return;
   }
 
   const scope = detectScope();
   upsertButton(scope);
+  applyShortsSection(settings.removeShortsSection);
 
   if (scope && settings.activeScopes[scope]) {
     scheduleFilter(scope);
@@ -222,8 +224,9 @@ function scheduleFilter(scope: Scope): void {
 }
 
 function hideWatchedCards(scope: Scope): void {
+  const threshold = settings?.watchedThreshold ?? 0;
   for (const card of getCards(scope)) {
-    if (isWatched(card)) {
+    if (isWatched(card, threshold)) {
       card.setAttribute(HIDDEN_ATTR, "true");
       card.style.display = "none";
     } else if (card.getAttribute(HIDDEN_ATTR) === "true") {
@@ -240,13 +243,41 @@ function showHiddenCards(): void {
   }
 }
 
+const SHORTS_SECTION_ATTR = "data-notyet-shorts-section";
+
+function applyShortsSection(hide: boolean): void {
+  const shelves = document.querySelectorAll<HTMLElement>(
+    "ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts], grid-shelf-view-model[is-shorts]"
+  );
+  const sections = new Set<HTMLElement>();
+  for (const shelf of shelves) {
+    sections.add(shelf.closest<HTMLElement>("ytd-rich-section-renderer") ?? shelf);
+  }
+  for (const section of sections) {
+    section.style.display = hide ? "none" : "";
+    section.setAttribute(SHORTS_SECTION_ATTR, String(hide));
+  }
+  if (!hide) {
+    for (const section of document.querySelectorAll<HTMLElement>(
+      `[${SHORTS_SECTION_ATTR}="true"]`
+    )) {
+      section.style.display = "";
+      section.removeAttribute(SHORTS_SECTION_ATTR);
+    }
+  }
+}
+
 function getCards(scope: Scope): HTMLElement[] {
   if (scope === "home") {
-    return [
+    const items = [
       ...document.querySelectorAll<HTMLElement>(
         "ytd-rich-grid-renderer > #contents > ytd-rich-item-renderer"
       )
     ];
+    if (settings?.skipTopRecommendations) {
+      return items.slice(settings.topRecommendationsCount);
+    }
+    return items;
   }
 
   const selectors = [
@@ -270,20 +301,42 @@ function getCardRoot(node: HTMLElement): HTMLElement {
   );
 }
 
-function isWatched(card: HTMLElement): boolean {
-  return hasProgressOverlay(card) || hasWatchedAriaLabel(card);
+function isWatched(card: HTMLElement, threshold: number): boolean {
+  if (hasWatchedAriaLabel(card)) return true;
+  const ratio = progressRatio(card);
+  if (ratio === null) return false;
+  return ratio >= threshold;
 }
 
-function hasProgressOverlay(card: HTMLElement): boolean {
-  const selectors = [
-    "ytd-thumbnail-overlay-resume-playback-renderer",
-    "#progress.ytd-thumbnail-overlay-resume-playback-renderer",
-    ".ytThumbnailOverlayProgressBarHostWatchedProgressBar",
-    ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
-    ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegmentModern"
-  ];
+const PROGRESS_SELECTORS = [
+  "ytd-thumbnail-overlay-resume-playback-renderer",
+  "#progress.ytd-thumbnail-overlay-resume-playback-renderer",
+  ".ytThumbnailOverlayProgressBarHostWatchedProgressBar",
+  ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
+  ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegmentModern"
+];
 
-  return selectors.some((selector) => [...card.querySelectorAll<HTMLElement>(selector)].some(isVisibleProgress));
+function progressRatio(card: HTMLElement): number | null {
+  const node = PROGRESS_SELECTORS.flatMap((s) => [...card.querySelectorAll<HTMLElement>(s)]).find(
+    isVisibleProgress
+  );
+  if (!node) return null;
+
+  const inlineWidth = node.style.width;
+  if (inlineWidth.endsWith("%")) {
+    const pct = Number.parseFloat(inlineWidth);
+    if (Number.isFinite(pct)) return pct / 100;
+  }
+
+  const rect = node.getBoundingClientRect();
+  if (rect.width > 0) {
+    const host =
+      node.closest<HTMLElement>(".ytThumbnailOverlayProgressBarHost") ?? node.parentElement;
+    const hostWidth = host?.getBoundingClientRect().width ?? 0;
+    if (hostWidth > 0) return Math.min(1, rect.width / hostWidth);
+  }
+
+  return 1;
 }
 
 function isVisibleProgress(node: HTMLElement): boolean {
