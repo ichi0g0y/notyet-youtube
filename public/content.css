@@ -87,6 +87,13 @@ ytd-menu-renderer {
   position: relative;
 }
 
+ytd-rich-section-renderer[data-notyet-shorts-section="true"],
+ytd-rich-section-renderer[data-notyet-home-shelf="true"],
+ytd-reel-shelf-renderer[data-notyet-shorts-section="true"],
+ytd-rich-shelf-renderer[data-notyet-shorts-section="true"] {
+  display: none !important;
+}
+
 .notyet-mark-btn {
   position: absolute;
   top: 36px;

@@ -50,7 +50,7 @@ const MESSAGES = {
     removeShortsSectionHint: "ホーム / 登録チャンネルの Shorts 行を消す。",
     hideHomeShelves: "ホームのテーマ別シェルフを隠す",
     hideHomeShelvesHint: "ニュース速報・トピック別おすすめなど横並びシェルフを消す。",
-    skipTopRecommendations: "上部のおすすめは残す",
+    skipTopRecommendations: "おすすめにフィルターを適用しない",
     skipTopRecommendationsHint: "ホーム先頭はフィルタしない（補填されないため）。",
     topCountLabel: "残す件数",
     watchedThresholdLabel: "視聴済みとみなす再生率",

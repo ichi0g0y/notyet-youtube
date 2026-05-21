@@ -264,46 +264,47 @@ function showHiddenCards(): void {
 const SHORTS_SECTION_ATTR = "data-notyet-shorts-section";
 
 function applyShortsSection(hide: boolean): void {
-  const shelves = document.querySelectorAll<HTMLElement>(
-    "ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts], grid-shelf-view-model[is-shorts]"
-  );
-  const sections = new Set<HTMLElement>();
-  for (const shelf of shelves) {
-    sections.add(shelf.closest<HTMLElement>("ytd-rich-section-renderer") ?? shelf);
-  }
-  for (const section of sections) {
-    section.style.display = hide ? "none" : "";
-    section.setAttribute(SHORTS_SECTION_ATTR, String(hide));
-  }
-  if (!hide) {
-    for (const section of document.querySelectorAll<HTMLElement>(
-      `[${SHORTS_SECTION_ATTR}="true"]`
-    )) {
-      section.style.display = "";
-      section.removeAttribute(SHORTS_SECTION_ATTR);
+  const wanted = new Set<HTMLElement>();
+  if (hide) {
+    const shelves = document.querySelectorAll<HTMLElement>(
+      "ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts], grid-shelf-view-model[is-shorts]"
+    );
+    for (const shelf of shelves) {
+      wanted.add(shelf.closest<HTMLElement>("ytd-rich-section-renderer") ?? shelf);
     }
   }
+  // Cleanup: remove attribute from sections no longer targeted
+  for (const previous of document.querySelectorAll<HTMLElement>(
+    `[${SHORTS_SECTION_ATTR}="true"]`
+  )) {
+    if (!wanted.has(previous)) previous.removeAttribute(SHORTS_SECTION_ATTR);
+  }
+  for (const section of wanted) section.setAttribute(SHORTS_SECTION_ATTR, "true");
 }
 
 const HOME_SHELF_ATTR = "data-notyet-home-shelf";
 
 function applyHomeShelves(hide: boolean): void {
-  const sections = document.querySelectorAll<HTMLElement>(
-    "ytd-rich-grid-renderer > #contents > ytd-rich-section-renderer"
-  );
-  for (const section of sections) {
-    if (section.getAttribute(SHORTS_SECTION_ATTR) === "true") continue; // Shorts is handled separately
-    section.style.display = hide ? "none" : "";
-    section.setAttribute(HOME_SHELF_ATTR, String(hide));
-  }
-  if (!hide) {
-    for (const section of document.querySelectorAll<HTMLElement>(
-      `[${HOME_SHELF_ATTR}="true"]`
-    )) {
-      section.style.display = "";
-      section.removeAttribute(HOME_SHELF_ATTR);
+  const wanted = new Set<HTMLElement>();
+  if (hide) {
+    const sections = document.querySelectorAll<HTMLElement>(
+      "ytd-rich-grid-renderer > #contents > ytd-rich-section-renderer"
+    );
+    for (const section of sections) {
+      // Skip Shorts — handled by its own attribute
+      if (section.hasAttribute(SHORTS_SECTION_ATTR)) continue;
+      if (section.querySelector("ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer")) {
+        continue;
+      }
+      wanted.add(section);
     }
   }
+  for (const previous of document.querySelectorAll<HTMLElement>(
+    `[${HOME_SHELF_ATTR}="true"]`
+  )) {
+    if (!wanted.has(previous)) previous.removeAttribute(HOME_SHELF_ATTR);
+  }
+  for (const section of wanted) section.setAttribute(HOME_SHELF_ATTR, "true");
 }
 
 function getCards(scope: Scope): HTMLElement[] {
