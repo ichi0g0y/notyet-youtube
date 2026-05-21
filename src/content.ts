@@ -4,6 +4,45 @@ const BUTTON_ID = "notyet-toggle";
 const HIDDEN_ATTR = "data-notyet-hidden";
 const WATCHED_LABELS = ["Watched", "視聴済み"];
 
+type MessageKey =
+  | "label.channel-videos"
+  | "label.channel-shorts"
+  | "label.channel-live"
+  | "label.subscriptions"
+  | "label.home"
+  | "label.disabled";
+
+type Locale = "en" | "ja";
+
+const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
+  en: {
+    "label.channel-videos": "Hide watched videos (Channel)",
+    "label.channel-shorts": "Hide watched shorts (Channel)",
+    "label.channel-live": "Hide watched streams (Channel)",
+    "label.subscriptions": "Hide watched (Subscriptions)",
+    "label.home": "Hide watched (Home)",
+    "label.disabled": "Disabled"
+  },
+  ja: {
+    "label.channel-videos": "視聴済み動画を隠す（チャンネル）",
+    "label.channel-shorts": "視聴済みショートを隠す（チャンネル）",
+    "label.channel-live": "視聴済みライブを隠す（チャンネル）",
+    "label.subscriptions": "視聴済みを隠す（登録チャンネル）",
+    "label.home": "視聴済みを隠す（ホーム）",
+    "label.disabled": "無効"
+  }
+};
+
+function getPageLocale(): Locale {
+  const raw = document.documentElement.lang || navigator.language || "en";
+  const base = raw.split("-")[0]?.toLowerCase();
+  return base === "ja" ? "ja" : "en";
+}
+
+function t(key: MessageKey): string {
+  return MESSAGES[getPageLocale()][key];
+}
+
 // Icons from npm "lolicon" (ichi0g0y/lolicon) — View / ViewHide glyphs, built with DOM API to bypass page-level Trusted Types.
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -75,6 +114,7 @@ async function start(): Promise<void> {
 
 function syncPage(): void {
   if (!settings?.enabled) {
+    window.clearTimeout(filterTimer);
     removeButton();
     showHiddenCards();
     return;
@@ -86,6 +126,7 @@ function syncPage(): void {
   if (scope && settings.activeScopes[scope]) {
     scheduleFilter(scope);
   } else {
+    window.clearTimeout(filterTimer);
     showHiddenCards();
   }
 }
@@ -110,10 +151,10 @@ function upsertButton(scope: Scope | null): void {
 
   const existing = document.querySelector<HTMLButtonElement>(`#${BUTTON_ID}`);
   const button = existing ?? document.createElement("button");
-  const displayScope: Scope = scope ?? "channel-videos";
-  const active = Boolean(settings?.activeScopes[displayScope]);
   const disabled = scope === null;
-  const labelText = disabled ? "Disabled" : labelFor(displayScope);
+  const displayScope: Scope = scope ?? "channel-videos";
+  const active = !disabled && Boolean(settings?.activeScopes[scope]);
+  const labelText = disabled ? t("label.disabled") : labelFor(displayScope);
 
   button.id = BUTTON_ID;
   button.className = "notyet-toggle";
@@ -166,18 +207,7 @@ async function toggleCurrentTab(): Promise<void> {
 }
 
 function labelFor(scope: Scope): string {
-  switch (scope) {
-    case "channel-videos":
-      return "Hide watched videos";
-    case "channel-shorts":
-      return "Hide watched shorts";
-    case "channel-live":
-      return "Hide watched streams";
-    case "subscriptions":
-      return "Hide watched (Subscriptions)";
-    case "home":
-      return "Hide watched (Home)";
-  }
+  return t(`label.${scope}`);
 }
 
 function removeButton(): void {
