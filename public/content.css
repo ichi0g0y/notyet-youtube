@@ -90,7 +90,9 @@ ytd-menu-renderer {
 ytd-rich-section-renderer[data-notyet-shorts-section="true"],
 ytd-rich-section-renderer[data-notyet-home-shelf="true"],
 ytd-reel-shelf-renderer[data-notyet-shorts-section="true"],
-ytd-rich-shelf-renderer[data-notyet-shorts-section="true"] {
+ytd-rich-shelf-renderer[data-notyet-shorts-section="true"],
+grid-shelf-view-model[data-notyet-shorts-section="true"],
+ytd-item-section-renderer[data-notyet-shorts-section="true"] {
   display: none !important;
 }
 

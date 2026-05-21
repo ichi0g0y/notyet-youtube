@@ -134,6 +134,7 @@ function syncPage(): void {
     removeButton();
     showHiddenCards();
     applyShortsSection(false);
+    applyHomeShelves(false);
     return;
   }
 
@@ -266,11 +267,21 @@ const SHORTS_SECTION_ATTR = "data-notyet-shorts-section";
 function applyShortsSection(hide: boolean): void {
   const wanted = new Set<HTMLElement>();
   if (hide) {
-    const shelves = document.querySelectorAll<HTMLElement>(
+    // Home / channel: explicit Shorts shelves
+    for (const shelf of document.querySelectorAll<HTMLElement>(
       "ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts], grid-shelf-view-model[is-shorts]"
-    );
-    for (const shelf of shelves) {
+    )) {
       wanted.add(shelf.closest<HTMLElement>("ytd-rich-section-renderer") ?? shelf);
+    }
+    // Search results: grid-shelf-view-model containing shorts lockups
+    for (const lockup of document.querySelectorAll<HTMLElement>(
+      "ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2"
+    )) {
+      const wrapper =
+        lockup.closest<HTMLElement>("grid-shelf-view-model") ??
+        lockup.closest<HTMLElement>("ytd-reel-shelf-renderer") ??
+        lockup.closest<HTMLElement>("ytd-item-section-renderer");
+      if (wrapper) wanted.add(wrapper);
     }
   }
   // Cleanup: remove attribute from sections no longer targeted
