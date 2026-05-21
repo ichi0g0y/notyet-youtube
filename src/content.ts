@@ -109,6 +109,7 @@ let observer: MutationObserver | null = null;
 let filterTimer: number | undefined;
 let syncTimer: number | undefined;
 let markTimer: number | undefined;
+let shelfTimer: number | undefined;
 
 void start();
 
@@ -542,6 +543,9 @@ function watchDomChanges(): void {
       requestSync();
     }
 
+    // Re-apply shelf hiding regardless of scope (search/home/anywhere can grow new shelves via infinite scroll)
+    scheduleShelfApply();
+
     const scope = detectScope();
     if (!scope) return;
     scheduleMarkButtons(scope);
@@ -559,6 +563,16 @@ function watchDomChanges(): void {
 function requestSync(): void {
   window.clearTimeout(syncTimer);
   syncTimer = window.setTimeout(syncPage, 250);
+}
+
+function scheduleShelfApply(): void {
+  window.clearTimeout(shelfTimer);
+  shelfTimer = window.setTimeout(() => {
+    if (!settings?.enabled) return;
+    applyShortsSection(settings.removeShortsSection);
+    const scope = detectScope();
+    applyHomeShelves(scope === "home" ? settings.hideHomeShelves : false);
+  }, 300);
 }
 
 function scheduleMarkButtons(scope: Scope): void {
