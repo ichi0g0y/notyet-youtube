@@ -3,14 +3,16 @@ export type Scope =
   | "channel-shorts"
   | "channel-live"
   | "subscriptions"
-  | "home";
+  | "home"
+  | "search";
 
 export const ALL_SCOPES: readonly Scope[] = [
   "channel-videos",
   "channel-shorts",
   "channel-live",
   "subscriptions",
-  "home"
+  "home",
+  "search"
 ];
 
 export type Settings = {
@@ -36,7 +38,8 @@ const DEFAULT_SETTINGS: Settings = {
     "channel-shorts": false,
     "channel-live": false,
     subscriptions: false,
-    home: false
+    home: false,
+    search: false
   },
   removeShortsSection: false,
   hideHomeShelves: false,
@@ -79,7 +82,8 @@ function normalize(raw: unknown): NotyetStateV1 {
       "channel-shorts": pickBool(scopes?.["channel-shorts"], legacy?.shorts ?? false),
       "channel-live": pickBool(scopes?.["channel-live"], legacy?.live ?? false),
       subscriptions: pickBool(scopes?.subscriptions, false),
-      home: pickBool(scopes?.home, false)
+      home: pickBool(scopes?.home, false),
+      search: pickBool(scopes?.search, false)
     },
     removeShortsSection: pickBool(v.removeShortsSection, DEFAULT_SETTINGS.removeShortsSection),
     hideHomeShelves: pickBool(v.hideHomeShelves, DEFAULT_SETTINGS.hideHomeShelves),

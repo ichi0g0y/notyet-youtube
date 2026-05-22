@@ -19,6 +19,7 @@ type MessageKey =
   | "label.channel-live"
   | "label.subscriptions"
   | "label.home"
+  | "label.search"
   | "label.disabled"
   | "label.mark"
   | "label.unmark";
@@ -32,6 +33,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     "label.channel-live": "Hide watched streams (Channel)",
     "label.subscriptions": "Hide watched (Subscriptions)",
     "label.home": "Hide watched (Home)",
+    "label.search": "Hide watched (Search)",
     "label.disabled": "Disabled",
     "label.mark": "Mark as watched",
     "label.unmark": "Unmark watched"
@@ -42,6 +44,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     "label.channel-live": "視聴済みライブを隠す（チャンネル）",
     "label.subscriptions": "視聴済みを隠す（登録チャンネル）",
     "label.home": "視聴済みを隠す（ホーム）",
+    "label.search": "視聴済みを隠す（検索結果）",
     "label.disabled": "無効",
     "label.mark": "視聴済みにする",
     "label.unmark": "視聴済みを解除"
@@ -109,7 +112,6 @@ let observer: MutationObserver | null = null;
 let filterTimer: number | undefined;
 let syncTimer: number | undefined;
 let markTimer: number | undefined;
-let shelfTimer: number | undefined;
 
 void start();
 
@@ -159,6 +161,7 @@ function detectScope(): Scope | null {
   const path = location.pathname;
   if (path === "/feed/subscriptions") return "subscriptions";
   if (path === "/" || path === "") return "home";
+  if (path === "/results") return "search";
 
   const match = CHANNEL_TAB_PATTERN.exec(path);
   if (!match) return null;
@@ -263,60 +266,12 @@ function showHiddenCards(): void {
   }
 }
 
-const SHORTS_SECTION_ATTR = "data-notyet-shorts-section";
-
 function applyShortsSection(hide: boolean): void {
-  const wanted = new Set<HTMLElement>();
-  if (hide) {
-    // Home / channel: explicit Shorts shelves
-    for (const shelf of document.querySelectorAll<HTMLElement>(
-      "ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts], grid-shelf-view-model[is-shorts]"
-    )) {
-      wanted.add(shelf.closest<HTMLElement>("ytd-rich-section-renderer") ?? shelf);
-    }
-    // Search results: grid-shelf-view-model containing shorts lockups
-    for (const lockup of document.querySelectorAll<HTMLElement>(
-      "ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2"
-    )) {
-      const wrapper =
-        lockup.closest<HTMLElement>("grid-shelf-view-model") ??
-        lockup.closest<HTMLElement>("ytd-reel-shelf-renderer") ??
-        lockup.closest<HTMLElement>("ytd-item-section-renderer");
-      if (wrapper) wanted.add(wrapper);
-    }
-  }
-  // Cleanup: remove attribute from sections no longer targeted
-  for (const previous of document.querySelectorAll<HTMLElement>(
-    `[${SHORTS_SECTION_ATTR}="true"]`
-  )) {
-    if (!wanted.has(previous)) previous.removeAttribute(SHORTS_SECTION_ATTR);
-  }
-  for (const section of wanted) section.setAttribute(SHORTS_SECTION_ATTR, "true");
+  document.documentElement.setAttribute("data-notyet-hide-shorts", String(hide));
 }
 
-const HOME_SHELF_ATTR = "data-notyet-home-shelf";
-
 function applyHomeShelves(hide: boolean): void {
-  const wanted = new Set<HTMLElement>();
-  if (hide) {
-    const sections = document.querySelectorAll<HTMLElement>(
-      "ytd-rich-grid-renderer > #contents > ytd-rich-section-renderer"
-    );
-    for (const section of sections) {
-      // Skip Shorts — handled by its own attribute
-      if (section.hasAttribute(SHORTS_SECTION_ATTR)) continue;
-      if (section.querySelector("ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer")) {
-        continue;
-      }
-      wanted.add(section);
-    }
-  }
-  for (const previous of document.querySelectorAll<HTMLElement>(
-    `[${HOME_SHELF_ATTR}="true"]`
-  )) {
-    if (!wanted.has(previous)) previous.removeAttribute(HOME_SHELF_ATTR);
-  }
-  for (const section of wanted) section.setAttribute(HOME_SHELF_ATTR, "true");
+  document.documentElement.setAttribute("data-notyet-hide-home-shelves", String(hide));
 }
 
 function getCards(scope: Scope): HTMLElement[] {
@@ -330,6 +285,14 @@ function getCards(scope: Scope): HTMLElement[] {
       return items.slice(settings.topRecommendationsCount);
     }
     return items;
+  }
+
+  if (scope === "search") {
+    return [
+      ...document.querySelectorAll<HTMLElement>(
+        "ytd-item-section-renderer ytd-video-renderer, ytd-item-section-renderer yt-lockup-view-model"
+      )
+    ];
   }
 
   const selectors = [
@@ -543,9 +506,6 @@ function watchDomChanges(): void {
       requestSync();
     }
 
-    // Re-apply shelf hiding regardless of scope (search/home/anywhere can grow new shelves via infinite scroll)
-    scheduleShelfApply();
-
     const scope = detectScope();
     if (!scope) return;
     scheduleMarkButtons(scope);
@@ -563,16 +523,6 @@ function watchDomChanges(): void {
 function requestSync(): void {
   window.clearTimeout(syncTimer);
   syncTimer = window.setTimeout(syncPage, 250);
-}
-
-function scheduleShelfApply(): void {
-  window.clearTimeout(shelfTimer);
-  shelfTimer = window.setTimeout(() => {
-    if (!settings?.enabled) return;
-    applyShortsSection(settings.removeShortsSection);
-    const scope = detectScope();
-    applyHomeShelves(scope === "home" ? settings.hideHomeShelves : false);
-  }, 300);
 }
 
 function scheduleMarkButtons(scope: Scope): void {

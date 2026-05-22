@@ -19,10 +19,11 @@ const MESSAGES = {
       "channel-shorts": "Channel · Shorts",
       "channel-live": "Channel · Streams",
       subscriptions: "Subscriptions",
-      home: "Home"
+      home: "Home",
+      search: "Search results"
     },
-    removeShortsSection: "Hide Shorts shelves",
-    removeShortsSectionHint: "Removes the Shorts row from Home / Subscriptions.",
+    removeShortsSection: "Hide all Shorts",
+    removeShortsSectionHint: "Removes Shorts shelves and any inline Shorts cards in feeds.",
     hideHomeShelves: "Hide themed shelves on Home",
     hideHomeShelvesHint: "Removes news / topic shelves on the Home feed.",
     skipTopRecommendations: "Keep top recommendations",
@@ -44,10 +45,11 @@ const MESSAGES = {
       "channel-shorts": "チャンネル · ショート",
       "channel-live": "チャンネル · ライブ",
       subscriptions: "登録チャンネル",
-      home: "ホーム"
+      home: "ホーム",
+      search: "検索結果"
     },
-    removeShortsSection: "Shorts シェルフを隠す",
-    removeShortsSectionHint: "ホーム / 登録チャンネルの Shorts 行を消す。",
+    removeShortsSection: "Shorts を全部隠す",
+    removeShortsSectionHint: "Shorts の棚も、フィード内の単独カードもまとめて消す。",
     hideHomeShelves: "ホームのテーマ別シェルフを隠す",
     hideHomeShelvesHint: "ニュース速報・トピック別おすすめなど横並びシェルフを消す。",
     skipTopRecommendations: "おすすめにフィルターを適用しない",
