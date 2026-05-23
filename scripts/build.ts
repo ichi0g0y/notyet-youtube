@@ -46,6 +46,7 @@ await Promise.all([
   cp("manifest.json", "dist/manifest.json"),
   cp("popup.html", "dist/popup.html"),
   cp("public/content.css", "dist/content.css"),
+  cp("public/icons", "dist/icons", { recursive: true }),
   runTailwind()
 ]);
 
