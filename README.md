@@ -1,4 +1,4 @@
-# NotYet for YouTube
+# fadee
 
 Hide watched videos on YouTube channel pages.
 

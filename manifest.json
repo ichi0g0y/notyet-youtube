@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "NotYet for YouTube",
+  "name": "fadee",
   "version": "0.1.0",
   "description": "Hide watched videos on YouTube channel pages.",
   "permissions": ["storage"],

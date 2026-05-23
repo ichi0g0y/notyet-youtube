@@ -26,9 +26,10 @@ export type Settings = {
   manuallyWatchedIds: string[];
 };
 
-type NotyetStateV1 = Settings & { version: 1 };
+type FadeeStateV1 = Settings & { version: 1 };
 
-const SYNC_KEY = "notyet_state_v1";
+const SYNC_KEY = "fadee_state_v1";
+const LEGACY_SYNC_KEY = "notyet_state_v1";
 const MAX_MARKED_IDS = 500;
 
 const DEFAULT_SETTINGS: Settings = {
@@ -70,7 +71,7 @@ function pickStringArray(value: unknown): string[] {
   return out;
 }
 
-function normalize(raw: unknown): NotyetStateV1 {
+function normalize(raw: unknown): FadeeStateV1 {
   const v = (raw ?? {}) as Record<string, unknown>;
   const legacy = v.activeTabs as LegacyTabs | undefined;
   const scopes = v.activeScopes as Partial<Record<Scope, boolean>> | undefined;
@@ -100,7 +101,7 @@ function normalize(raw: unknown): NotyetStateV1 {
   };
 }
 
-function stripVersion(state: NotyetStateV1): Settings {
+function stripVersion(state: FadeeStateV1): Settings {
   const { version: _v, ...rest } = state;
   void _v;
   return rest;
@@ -109,6 +110,14 @@ function stripVersion(state: NotyetStateV1): Settings {
 export async function getSettings(): Promise<Settings> {
   const synced = await chrome.storage.sync.get(SYNC_KEY);
   if (synced[SYNC_KEY]) return stripVersion(normalize(synced[SYNC_KEY]));
+
+  const legacySynced = await chrome.storage.sync.get(LEGACY_SYNC_KEY);
+  if (legacySynced[LEGACY_SYNC_KEY]) {
+    const migrated = normalize(legacySynced[LEGACY_SYNC_KEY]);
+    await chrome.storage.sync.set({ [SYNC_KEY]: migrated });
+    await chrome.storage.sync.remove(LEGACY_SYNC_KEY);
+    return stripVersion(migrated);
+  }
 
   const legacyKeys = [
     "enabled",
@@ -132,7 +141,7 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
-  const next: NotyetStateV1 = {
+  const next: FadeeStateV1 = {
     version: 1,
     ...settings,
     manuallyWatchedIds: settings.manuallyWatchedIds.slice(-MAX_MARKED_IDS)
