@@ -8,7 +8,7 @@ type Locale = "en" | "ja";
 const MESSAGES = {
   en: {
     eyebrow: "Move on. Find new.",
-    title: "NotYet",
+    title: "fadee",
     subtitle: "Tame your YouTube feeds by hiding videos you've already watched.",
     masterOn: "Filter on",
     masterOff: "Filter off",
@@ -34,7 +34,7 @@ const MESSAGES = {
   },
   ja: {
     eyebrow: "視聴済みは、視界の外へ。",
-    title: "NotYet",
+    title: "fadee",
     subtitle: "視聴済み動画を隠して YouTube フィードをすっきり保つ。",
     masterOn: "フィルタ ON",
     masterOff: "フィルタ OFF",

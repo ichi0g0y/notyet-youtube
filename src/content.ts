@@ -7,10 +7,10 @@ import {
   unmarkWatched
 } from "./storage";
 
-const BUTTON_ID = "notyet-toggle";
-const MARK_BTN_CLASS = "notyet-mark-btn";
-const MARK_INJECTED_ATTR = "data-notyet-mark";
-const HIDDEN_ATTR = "data-notyet-hidden";
+const BUTTON_ID = "fadee-toggle";
+const MARK_BTN_CLASS = "fadee-mark-btn";
+const MARK_INJECTED_ATTR = "data-fadee-mark";
+const HIDDEN_ATTR = "data-fadee-hidden";
 const WATCHED_LABELS = ["Watched", "視聴済み"];
 
 type MessageKey =
@@ -182,7 +182,7 @@ function upsertButton(scope: Scope | null): void {
   const labelText = disabled ? t("label.disabled") : labelFor(displayScope);
 
   button.id = BUTTON_ID;
-  button.className = "notyet-toggle";
+  button.className = "fadee-toggle";
   button.type = "button";
   button.disabled = disabled;
   button.dataset.scope = displayScope;
@@ -193,11 +193,11 @@ function upsertButton(scope: Scope | null): void {
   button.title = labelText;
 
   const iconWrap = document.createElement("span");
-  iconWrap.className = "notyet-icon-wrap";
+  iconWrap.className = "fadee-icon-wrap";
   iconWrap.append(active ? createViewHideIcon() : createViewIcon());
 
   const label = document.createElement("span");
-  label.className = "notyet-label";
+  label.className = "fadee-label";
   label.textContent = labelText;
 
   button.replaceChildren(iconWrap, label);
@@ -267,11 +267,11 @@ function showHiddenCards(): void {
 }
 
 function applyShortsSection(hide: boolean): void {
-  document.documentElement.setAttribute("data-notyet-hide-shorts", String(hide));
+  document.documentElement.setAttribute("data-fadee-hide-shorts", String(hide));
 }
 
 function applyHomeShelves(hide: boolean): void {
-  document.documentElement.setAttribute("data-notyet-hide-home-shelves", String(hide));
+  document.documentElement.setAttribute("data-fadee-hide-home-shelves", String(hide));
 }
 
 function getCards(scope: Scope): HTMLElement[] {

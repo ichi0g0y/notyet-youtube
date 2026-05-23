@@ -1,4 +1,4 @@
-.notyet-toggle {
+.fadee-toggle {
   display: inline-flex;
   align-items: center;
   height: 36px;
@@ -13,44 +13,44 @@
   transition: padding-right 250ms ease, background 200ms ease;
 }
 
-.notyet-toggle:hover {
+.fadee-toggle:hover {
   background: rgba(0, 0, 0, 0.1);
   padding-right: 14px;
 }
 
-.notyet-toggle[data-active="true"] {
+.fadee-toggle[data-active="true"] {
   background: #0f0f0f;
   color: #fff;
 }
 
-.notyet-toggle[data-active="true"]:hover {
+.fadee-toggle[data-active="true"]:hover {
   background: #303030;
 }
 
-html[dark] .notyet-toggle {
+html[dark] .fadee-toggle {
   background: rgba(255, 255, 255, 0.1);
   color: #f1f1f1;
 }
 
-html[dark] .notyet-toggle:hover {
+html[dark] .fadee-toggle:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[dark] .notyet-toggle[data-active="true"] {
+html[dark] .fadee-toggle[data-active="true"] {
   background: #fff;
   color: #0f0f0f;
 }
 
-html[dark] .notyet-toggle[data-active="true"]:hover {
+html[dark] .fadee-toggle[data-active="true"]:hover {
   background: #e5e5e5;
 }
 
-.notyet-toggle[aria-disabled="true"] {
+.fadee-toggle[aria-disabled="true"] {
   cursor: default;
   opacity: 0.4;
 }
 
-.notyet-icon-wrap {
+.fadee-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -59,13 +59,13 @@ html[dark] .notyet-toggle[data-active="true"]:hover {
   flex-shrink: 0;
 }
 
-.notyet-toggle svg {
+.fadee-toggle svg {
   display: block;
   width: 24px;
   height: 24px;
 }
 
-.notyet-label {
+.fadee-label {
   display: inline-block;
   max-width: 0;
   opacity: 0;
@@ -76,7 +76,7 @@ html[dark] .notyet-toggle[data-active="true"]:hover {
   transition: max-width 250ms ease, opacity 200ms ease, padding-left 200ms ease;
 }
 
-.notyet-toggle:hover .notyet-label {
+.fadee-toggle:hover .fadee-label {
   max-width: 220px;
   opacity: 1;
   padding-left: 4px;
@@ -88,37 +88,37 @@ ytd-menu-renderer {
 }
 
 /* Shorts shelves (whole sections) */
-html[data-notyet-hide-shorts="true"] ytd-rich-shelf-renderer[is-shorts],
-html[data-notyet-hide-shorts="true"] ytd-reel-shelf-renderer,
-html[data-notyet-hide-shorts="true"] grid-shelf-view-model[is-shorts],
-html[data-notyet-hide-shorts="true"] grid-shelf-view-model:has(ytm-shorts-lockup-view-model),
-html[data-notyet-hide-shorts="true"] grid-shelf-view-model:has(ytm-shorts-lockup-view-model-v2),
-html[data-notyet-hide-shorts="true"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
-html[data-notyet-hide-shorts="true"] ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
-html[data-notyet-hide-shorts="true"] ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model),
-html[data-notyet-hide-shorts="true"] ytd-item-section-renderer:has(ytd-reel-shelf-renderer),
+html[data-fadee-hide-shorts="true"] ytd-rich-shelf-renderer[is-shorts],
+html[data-fadee-hide-shorts="true"] ytd-reel-shelf-renderer,
+html[data-fadee-hide-shorts="true"] grid-shelf-view-model[is-shorts],
+html[data-fadee-hide-shorts="true"] grid-shelf-view-model:has(ytm-shorts-lockup-view-model),
+html[data-fadee-hide-shorts="true"] grid-shelf-view-model:has(ytm-shorts-lockup-view-model-v2),
+html[data-fadee-hide-shorts="true"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html[data-fadee-hide-shorts="true"] ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
+html[data-fadee-hide-shorts="true"] ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model),
+html[data-fadee-hide-shorts="true"] ytd-item-section-renderer:has(ytd-reel-shelf-renderer),
 
 /* Standalone single Shorts cards mixed into normal feeds */
-html[data-notyet-hide-shorts="true"] ytm-shorts-lockup-view-model,
-html[data-notyet-hide-shorts="true"] ytm-shorts-lockup-view-model-v2,
-html[data-notyet-hide-shorts="true"] ytd-reel-item-renderer,
-html[data-notyet-hide-shorts="true"] ytd-reel-video-renderer,
-html[data-notyet-hide-shorts="true"] ytd-rich-item-renderer:has(> div > ytm-shorts-lockup-view-model),
-html[data-notyet-hide-shorts="true"] ytd-rich-item-renderer:has(> div > ytm-shorts-lockup-view-model-v2),
-html[data-notyet-hide-shorts="true"] ytd-rich-item-renderer:has(> div > yt-lockup-view-model > div > ytm-shorts-lockup-view-model),
-html[data-notyet-hide-shorts="true"] yt-lockup-view-model:has(ytm-shorts-lockup-view-model),
-html[data-notyet-hide-shorts="true"] yt-lockup-view-model:has(ytm-shorts-lockup-view-model-v2),
-html[data-notyet-hide-shorts="true"] yt-lockup-view-model:has(a[href^="/shorts/"]),
-html[data-notyet-hide-shorts="true"] ytd-video-renderer:has(a[href^="/shorts/"]),
-html[data-notyet-hide-shorts="true"] ytd-compact-video-renderer:has(a[href^="/shorts/"]) {
+html[data-fadee-hide-shorts="true"] ytm-shorts-lockup-view-model,
+html[data-fadee-hide-shorts="true"] ytm-shorts-lockup-view-model-v2,
+html[data-fadee-hide-shorts="true"] ytd-reel-item-renderer,
+html[data-fadee-hide-shorts="true"] ytd-reel-video-renderer,
+html[data-fadee-hide-shorts="true"] ytd-rich-item-renderer:has(> div > ytm-shorts-lockup-view-model),
+html[data-fadee-hide-shorts="true"] ytd-rich-item-renderer:has(> div > ytm-shorts-lockup-view-model-v2),
+html[data-fadee-hide-shorts="true"] ytd-rich-item-renderer:has(> div > yt-lockup-view-model > div > ytm-shorts-lockup-view-model),
+html[data-fadee-hide-shorts="true"] yt-lockup-view-model:has(ytm-shorts-lockup-view-model),
+html[data-fadee-hide-shorts="true"] yt-lockup-view-model:has(ytm-shorts-lockup-view-model-v2),
+html[data-fadee-hide-shorts="true"] yt-lockup-view-model:has(a[href^="/shorts/"]),
+html[data-fadee-hide-shorts="true"] ytd-video-renderer:has(a[href^="/shorts/"]),
+html[data-fadee-hide-shorts="true"] ytd-compact-video-renderer:has(a[href^="/shorts/"]) {
   display: none !important;
 }
 
-html[data-notyet-hide-home-shelves="true"] ytd-browse[page-subtype="home"] ytd-rich-grid-renderer > #contents > ytd-rich-section-renderer {
+html[data-fadee-hide-home-shelves="true"] ytd-browse[page-subtype="home"] ytd-rich-grid-renderer > #contents > ytd-rich-section-renderer {
   display: none !important;
 }
 
-.notyet-mark-btn {
+.fadee-mark-btn {
   position: absolute;
   top: 36px;
   right: 0;
@@ -138,30 +138,30 @@ html[data-notyet-hide-home-shelves="true"] ytd-browse[page-subtype="home"] ytd-r
   transition: background 150ms ease, opacity 150ms ease, transform 150ms ease;
 }
 
-html[dark] .notyet-mark-btn {
+html[dark] .fadee-mark-btn {
   color: #f1f1f1;
 }
 
-.notyet-mark-btn:hover {
+.fadee-mark-btn:hover {
   background: rgba(0, 0, 0, 0.1);
   opacity: 1;
 }
 
-html[dark] .notyet-mark-btn:hover {
+html[dark] .fadee-mark-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.notyet-mark-btn[data-marked="true"] {
+.fadee-mark-btn[data-marked="true"] {
   background: #d56b2f;
   color: #fff;
   opacity: 1;
 }
 
-.notyet-mark-btn[data-marked="true"]:hover {
+.fadee-mark-btn[data-marked="true"]:hover {
   background: #a94c1c;
 }
 
-.notyet-mark-btn svg {
+.fadee-mark-btn svg {
   display: block;
   width: 20px;
   height: 20px;
