@@ -1,7 +1,6 @@
 import * as Switch from "@radix-ui/react-switch";
 import { type ReactNode, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { useActionIconTheme } from "./icon-theme";
 import { ALL_SCOPES, getSettings, saveSettings, type Scope, type Settings } from "./storage";
 
 type Locale = "en" | "ja";
@@ -70,7 +69,6 @@ function App() {
   useEffect(() => {
     void getSettings().then(setSettings);
   }, []);
-  useActionIconTheme();
 
   if (!settings) {
     return <div className="py-16 text-center text-sm text-muted">…</div>;
