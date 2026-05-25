@@ -122,7 +122,7 @@ async function start(): Promise<void> {
   watchDomChanges();
 
   chrome.storage.onChanged.addListener((_changes, area) => {
-    if (area !== "local") return;
+    if (area !== "sync") return;
 
     void getSettings().then((nextSettings) => {
       settings = nextSettings;
