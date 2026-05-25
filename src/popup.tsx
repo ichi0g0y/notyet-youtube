@@ -1,7 +1,6 @@
 import * as Switch from "@radix-ui/react-switch";
 import { type ReactNode, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { useActionIconTheme } from "./icon-theme";
 import { ALL_SCOPES, getMarkedCount, getSettings, saveSettings, type Scope, type Settings } from "./storage";
 
 type Locale = "en" | "ja";
@@ -9,9 +8,7 @@ type MarkedCount = { count: number; cap: number };
 
 const MESSAGES = {
   en: {
-    eyebrow: "Move on. Find new.",
     title: "fadee",
-    subtitle: "Tame your YouTube feeds by hiding videos you've already watched.",
     masterOn: "Filter on",
     masterOff: "Filter off",
     markedCountLabel: "Marked",
@@ -36,9 +33,7 @@ const MESSAGES = {
     watchedThresholdHint: "Slide right to require more progress before hiding."
   },
   ja: {
-    eyebrow: "視聴済みは、視界の外へ。",
     title: "fadee",
-    subtitle: "視聴済み動画を隠して YouTube フィードをすっきり保つ。",
     masterOn: "フィルタ ON",
     masterOff: "フィルタ OFF",
     markedCountLabel: "視聴済み",
@@ -105,8 +100,6 @@ function App() {
     };
   }, []);
 
-  useActionIconTheme();
-
   if (!settings) {
     return <div className="py-16 text-center text-sm text-muted">…</div>;
   }
@@ -118,7 +111,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <Hero settings={settings} markedCount={markedCount} onToggle={(enabled) => update({ enabled })} />
 
       <Panel title={t.sectionScopes}>
@@ -179,29 +172,66 @@ function App() {
 
 function Hero({ settings, markedCount, onToggle }: { settings: Settings; markedCount: MarkedCount | null; onToggle: (v: boolean) => void }) {
   return (
-    <header className="flex items-start justify-between gap-3 px-1 pt-1">
-      <div className="min-w-0 flex-1">
-        <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
-          {t.eyebrow}
-        </p>
-        <h1 className="m-0 mt-1 text-2xl tracking-wide text-ink">{t.title}</h1>
-        <p className="mt-1 text-[12px] leading-snug text-muted">{t.subtitle}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-accent">
+    <header className="flex items-start justify-between gap-3 px-0.5 pb-0.5">
+      <TitleLogo />
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-faded">
             {settings.enabled ? t.masterOn : t.masterOff}
-          </p>
-          <MarkedCountBadge value={markedCount} />
+          </span>
+          <ToggleSwitch checked={settings.enabled} onChange={onToggle} ariaLabel={t.title} />
         </div>
+        <MarkedCountBadge value={markedCount} />
       </div>
-      <ToggleSwitch checked={settings.enabled} onChange={onToggle} ariaLabel={t.title} />
     </header>
+  );
+}
+
+function TitleLogo() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="3 0 50 12"
+      width={150}
+      height={36}
+      shapeRendering="crispEdges"
+      role="img"
+      aria-label={t.title}
+      className="text-ink"
+    >
+      <rect x={5} y={2} width={7} height={2} fill="currentColor" />
+      <rect x={15} y={2} width={5} height={2} fill="currentColor" />
+      <rect x={23} y={2} width={6} height={2} fill="currentColor" />
+      <rect x={32} y={2} width={7} height={2} fill="currentColor" />
+      <rect x={41} y={2} width={7} height={2} fill="currentColor" />
+      <rect x={14} y={3} width={1} height={7} fill="currentColor" />
+      <rect x={20} y={3} width={1} height={7} fill="currentColor" />
+      <rect x={29} y={3} width={1} height={6} fill="currentColor" />
+      <rect x={5} y={4} width={2} height={6} fill="currentColor" />
+      <rect x={15} y={4} width={1} height={6} fill="currentColor" />
+      <rect x={19} y={4} width={1} height={6} fill="currentColor" />
+      <rect x={23} y={4} width={2} height={6} fill="currentColor" />
+      <rect x={28} y={4} width={1} height={6} fill="currentColor" />
+      <rect x={32} y={4} width={2} height={6} fill="currentColor" />
+      <rect x={41} y={4} width={2} height={6} fill="currentColor" />
+      <rect x={7} y={5} width={4} height={1} fill="currentColor" />
+      <rect x={34} y={5} width={4} height={1} fill="currentColor" />
+      <rect x={43} y={5} width={4} height={1} fill="currentColor" />
+      <rect x={7} y={6} width={3} height={1} fill="currentColor" />
+      <rect x={16} y={6} width={3} height={2} fill="currentColor" />
+      <rect x={34} y={6} width={3} height={1} fill="currentColor" />
+      <rect x={43} y={6} width={3} height={1} fill="currentColor" />
+      <rect x={25} y={8} width={3} height={2} fill="currentColor" />
+      <rect x={34} y={8} width={5} height={2} fill="currentColor" />
+      <rect x={43} y={8} width={5} height={2} fill="currentColor" />
+    </svg>
   );
 }
 
 function MarkedCountBadge({ value }: { value: MarkedCount | null }) {
   if (!value) return null;
   return (
-    <div className="rounded-full bg-[rgba(27,26,22,0.06)] px-2 py-0.5 text-[11px] font-semibold text-muted">
+    <div className="rounded-full bg-[rgba(255,255,255,0.06)] px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted">
       {t.markedCountLabel} {value.count.toLocaleString()} / {value.cap.toLocaleString()}
     </div>
   );
@@ -209,11 +239,11 @@ function MarkedCountBadge({ value }: { value: MarkedCount | null }) {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="panel-rise rounded-2xl border border-outline bg-card p-3.5 shadow-[0_10px_24px_rgba(33,25,15,0.08)]">
-      <h2 className="m-0 mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+    <section className="rounded-md border border-outline bg-card p-2.5">
+      <h2 className="m-0 mb-1.5 px-1.5 text-[10px] font-semibold uppercase tracking-widest text-faded">
         {title}
       </h2>
-      <div className="flex flex-col gap-1">{children}</div>
+      <div className="flex flex-col gap-0.5">{children}</div>
     </section>
   );
 }
@@ -221,12 +251,12 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 function ToggleRow({ label, hint, checked, disabled, onChange }: { label: string; hint?: string; checked: boolean; disabled?: boolean | undefined; onChange: (v: boolean) => void }) {
   return (
     <label
-      className={`flex items-center justify-between gap-3 rounded-xl px-2 py-2 transition ${
-        disabled ? "opacity-50" : "hover:bg-[rgba(213,107,47,0.06)]"
+      className={`flex items-center justify-between gap-3 rounded-md px-1.5 py-1.5 transition-colors ${
+        disabled ? "opacity-40" : "hover:bg-[rgba(255,255,255,0.04)]"
       }`}
     >
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-semibold text-ink">{label}</div>
+        <div className="truncate text-[13px] font-medium text-ink">{label}</div>
         {hint && <div className="mt-0.5 text-[11px] leading-snug text-muted">{hint}</div>}
       </div>
       <ToggleSwitch checked={checked} disabled={disabled} onChange={onChange} ariaLabel={label} />
@@ -236,8 +266,8 @@ function ToggleRow({ label, hint, checked, disabled, onChange }: { label: string
 
 function NumberRow({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded-xl px-2 py-2">
-      <div className="text-[13px] font-semibold text-ink">{label}</div>
+    <label className="flex items-center justify-between gap-3 rounded-md px-1.5 py-1.5">
+      <div className="text-[13px] font-medium text-ink">{label}</div>
       <input
         type="number"
         min={min}
@@ -247,7 +277,7 @@ function NumberRow({ label, value, min, max, onChange }: { label: string; value:
           const v = Number.parseInt(e.target.value, 10);
           if (Number.isFinite(v)) onChange(Math.min(max, Math.max(min, v)));
         }}
-        className="w-16 rounded-lg border border-outline bg-white px-2 py-1 text-right text-[13px] text-ink focus:border-accent focus:outline-2 focus:outline-[rgba(213,107,47,0.35)]"
+        className="w-14 rounded-md border border-outline bg-bg-2 px-2 py-1 text-right text-[13px] tabular-nums text-ink focus:border-accent focus:outline-none"
       />
     </label>
   );
@@ -256,10 +286,10 @@ function NumberRow({ label, value, min, max, onChange }: { label: string; value:
 function SliderRow({ label, hint, value, onChange }: { label: string; hint?: string; value: number; onChange: (v: number) => void }) {
   const percent = Math.round(value * 100);
   return (
-    <div className="space-y-1 rounded-xl px-2 py-2">
+    <div className="space-y-1 rounded-md px-1.5 py-1.5">
       <div className="flex items-center justify-between">
-        <div className="text-[13px] font-semibold text-ink">{label}</div>
-        <div className="rounded-full bg-[rgba(213,107,47,0.12)] px-2 py-0.5 text-[11px] font-semibold text-accent-dark">
+        <div className="text-[13px] font-medium text-ink">{label}</div>
+        <div className="rounded bg-[rgba(94,106,210,0.16)] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-accent-bright">
           {percent}%
         </div>
       </div>
@@ -283,9 +313,9 @@ function ToggleSwitch({ checked, disabled, onChange, ariaLabel }: { checked: boo
       disabled={disabled}
       onCheckedChange={onChange}
       aria-label={ariaLabel}
-      className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full border border-outline bg-[rgba(27,26,22,0.08)] transition-colors data-[state=checked]:border-accent data-[state=checked]:bg-accent disabled:cursor-not-allowed"
+      className="relative h-[18px] w-[30px] shrink-0 cursor-pointer rounded-full border border-outline bg-[rgba(255,255,255,0.06)] transition-colors data-[state=checked]:border-accent data-[state=checked]:bg-accent disabled:cursor-not-allowed"
     >
-      <Switch.Thumb className="block size-5 translate-x-0.5 rounded-full bg-card shadow-[0_2px_6px_rgba(33,25,15,0.25)] transition-transform data-[state=checked]:translate-x-[22px]" />
+      <Switch.Thumb className="block size-[14px] translate-x-0.5 rounded-full bg-[#d4d5d8] shadow-[0_1px_2px_rgba(0,0,0,0.45)] transition-transform data-[state=checked]:translate-x-[13px] data-[state=checked]:bg-white" />
     </Switch.Root>
   );
 }

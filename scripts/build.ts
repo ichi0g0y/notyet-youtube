@@ -20,6 +20,13 @@ const results = await Promise.all([
     naming: "background.js"
   }),
   Bun.build({
+    entrypoints: ["src/offscreen.ts"],
+    outdir: "dist",
+    format: "iife",
+    target: "browser",
+    naming: "offscreen.js"
+  }),
+  Bun.build({
     entrypoints: ["src/popup.tsx"],
     outdir: "dist",
     format: "iife",
@@ -45,6 +52,7 @@ for (const result of results) {
 await Promise.all([
   cp("manifest.json", "dist/manifest.json"),
   cp("popup.html", "dist/popup.html"),
+  cp("offscreen.html", "dist/offscreen.html"),
   cp("public/content.css", "dist/content.css"),
   cp("public/icons", "dist/icons", { recursive: true }),
   runTailwind()

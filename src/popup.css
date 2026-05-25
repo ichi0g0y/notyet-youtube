@@ -1,17 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #f7f1e6;
-  --color-bg-2: #f0dcc4;
-  --color-card: #fffaf1;
-  --color-ink: #1b1a16;
-  --color-muted: #6b5c4f;
-  --color-accent: #d56b2f;
-  --color-accent-dark: #a94c1c;
-  --color-outline: #e2d4c0;
-  --color-danger: #b33f2c;
+  --color-bg: #0b0c0e;
+  --color-bg-2: #15161a;
+  --color-card: #15161a;
+  --color-card-hover: #1c1d22;
+  --color-ink: #f2f2f4;
+  --color-muted: #8e8f94;
+  --color-faded: #5a5c62;
+  --color-accent: #5e6ad2;
+  --color-accent-dark: #4750c0;
+  --color-accent-bright: #7b87ee;
+  --color-outline: #25262c;
+  --color-danger: #e5484d;
 
-  --font-display: "Georgia", "Palatino", "Times New Roman", serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 html,
@@ -21,61 +25,14 @@ body {
   width: 320px;
   color: var(--color-ink);
   font-family: var(--font-display);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
-  position: relative;
-  overflow: hidden;
-  background: radial-gradient(
-    circle at top left,
-    #fff4e0 0%,
-    var(--color-bg) 40%,
-    var(--color-bg-2) 100%
-  );
-}
-
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  width: 160px;
-  height: 160px;
-  border-radius: 32px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body::before {
-  top: -40px;
-  right: -60px;
-  background: rgba(213, 107, 47, 0.12);
-  transform: rotate(12deg);
-}
-
-body::after {
-  bottom: -50px;
-  left: -40px;
-  background: rgba(27, 26, 22, 0.08);
-  transform: rotate(-8deg);
+  background: var(--color-bg);
 }
 
 #root {
-  position: relative;
-  z-index: 1;
-  padding: 16px 16px 20px;
-}
-
-@keyframes panelRise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.panel-rise {
-  animation: panelRise 0.35s ease both;
+  padding: 14px 14px 16px;
 }
