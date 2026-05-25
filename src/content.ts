@@ -122,7 +122,7 @@ async function start(): Promise<void> {
   watchDomChanges();
 
   chrome.storage.onChanged.addListener((_changes, area) => {
-    if (area !== "sync") return;
+    if (area !== "local") return;
 
     void getSettings().then((nextSettings) => {
       settings = nextSettings;
@@ -543,4 +543,3 @@ function isOwnMutation(record: MutationRecord): boolean {
   }
   return false;
 }
-
