@@ -1,15 +1,17 @@
 import * as Switch from "@radix-ui/react-switch";
 import { type ReactNode, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ALL_SCOPES, getSettings, saveSettings, type Scope, type Settings } from "./storage";
+import { ALL_SCOPES, getMarkedCount, getSettings, saveSettings, type Scope, type Settings } from "./storage";
 
 type Locale = "en" | "ja";
+type MarkedCount = { count: number; cap: number };
 
 const MESSAGES = {
   en: {
     title: "fadee",
     masterOn: "Filter on",
     masterOff: "Filter off",
+    markedCountLabel: "Marked",
     sectionScopes: "Where to filter",
     sectionExtras: "Extras",
     scope: {
@@ -34,6 +36,7 @@ const MESSAGES = {
     title: "fadee",
     masterOn: "フィルタ ON",
     masterOff: "フィルタ OFF",
+    markedCountLabel: "視聴済み",
     sectionScopes: "どこをフィルタするか",
     sectionExtras: "その他",
     scope: {
@@ -58,12 +61,43 @@ const MESSAGES = {
 
 const locale: Locale = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
 const t = MESSAGES[locale];
+const MARKED_META_KEY = "fadee_marked_meta_v2";
+const MARKED_SHARD_PREFIX = "fadee_marked_v2_";
+
+function isMarkedStorageKey(key: string): boolean {
+  return key === MARKED_META_KEY || key.startsWith(MARKED_SHARD_PREFIX);
+}
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [markedCount, setMarkedCount] = useState<MarkedCount | null>(null);
 
   useEffect(() => {
     void getSettings().then(setSettings);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let seq = 0;
+    const refresh = () => {
+      const mine = ++seq;
+      void getMarkedCount()
+        .then((next) => { if (active && mine === seq) setMarkedCount(next); })
+        .catch((error) => {
+          console.warn("Failed to refresh marked count", error);
+          if (active && mine === seq) setMarkedCount(null);
+        });
+    };
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+      if (areaName === "sync" && Object.keys(changes).some(isMarkedStorageKey)) refresh();
+    };
+
+    refresh();
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => {
+      active = false;
+      chrome.storage.onChanged.removeListener(onChanged);
+    };
   }, []);
 
   if (!settings) {
@@ -78,7 +112,7 @@ function App() {
 
   return (
     <div className="flex flex-col gap-3">
-      <Hero settings={settings} onToggle={(enabled) => update({ enabled })} />
+      <Hero settings={settings} markedCount={markedCount} onToggle={(enabled) => update({ enabled })} />
 
       <Panel title={t.sectionScopes}>
         {ALL_SCOPES.map((scope) => (
@@ -136,15 +170,18 @@ function App() {
   );
 }
 
-function Hero({ settings, onToggle }: { settings: Settings; onToggle: (v: boolean) => void }) {
+function Hero({ settings, markedCount, onToggle }: { settings: Settings; markedCount: MarkedCount | null; onToggle: (v: boolean) => void }) {
   return (
-    <header className="flex items-center justify-between gap-3 px-0.5 pb-0.5">
+    <header className="flex items-start justify-between gap-3 px-0.5 pb-0.5">
       <TitleLogo />
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-faded">
-          {settings.enabled ? t.masterOn : t.masterOff}
-        </span>
-        <ToggleSwitch checked={settings.enabled} onChange={onToggle} ariaLabel={t.title} />
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-faded">
+            {settings.enabled ? t.masterOn : t.masterOff}
+          </span>
+          <ToggleSwitch checked={settings.enabled} onChange={onToggle} ariaLabel={t.title} />
+        </div>
+        <MarkedCountBadge value={markedCount} />
       </div>
     </header>
   );
@@ -191,6 +228,15 @@ function TitleLogo() {
   );
 }
 
+function MarkedCountBadge({ value }: { value: MarkedCount | null }) {
+  if (!value) return null;
+  return (
+    <div className="rounded-full bg-[rgba(255,255,255,0.06)] px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted">
+      {t.markedCountLabel} {value.count.toLocaleString()} / {value.cap.toLocaleString()}
+    </div>
+  );
+}
+
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-md border border-outline bg-card p-2.5">
@@ -202,19 +248,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function ToggleRow({
-  label,
-  hint,
-  checked,
-  disabled,
-  onChange
-}: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  disabled?: boolean | undefined;
-  onChange: (v: boolean) => void;
-}) {
+function ToggleRow({ label, hint, checked, disabled, onChange }: { label: string; hint?: string; checked: boolean; disabled?: boolean | undefined; onChange: (v: boolean) => void }) {
   return (
     <label
       className={`flex items-center justify-between gap-3 rounded-md px-1.5 py-1.5 transition-colors ${
@@ -230,19 +264,7 @@ function ToggleRow({
   );
 }
 
-function NumberRow({
-  label,
-  value,
-  min,
-  max,
-  onChange
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (v: number) => void;
-}) {
+function NumberRow({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void }) {
   return (
     <label className="flex items-center justify-between gap-3 rounded-md px-1.5 py-1.5">
       <div className="text-[13px] font-medium text-ink">{label}</div>
@@ -261,17 +283,7 @@ function NumberRow({
   );
 }
 
-function SliderRow({
-  label,
-  hint,
-  value,
-  onChange
-}: {
-  label: string;
-  hint?: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
+function SliderRow({ label, hint, value, onChange }: { label: string; hint?: string; value: number; onChange: (v: number) => void }) {
   const percent = Math.round(value * 100);
   return (
     <div className="space-y-1 rounded-md px-1.5 py-1.5">
@@ -294,17 +306,7 @@ function SliderRow({
   );
 }
 
-function ToggleSwitch({
-  checked,
-  disabled,
-  onChange,
-  ariaLabel
-}: {
-  checked: boolean;
-  disabled?: boolean | undefined;
-  onChange: (v: boolean) => void;
-  ariaLabel: string;
-}) {
+function ToggleSwitch({ checked, disabled, onChange, ariaLabel }: { checked: boolean; disabled?: boolean | undefined; onChange: (v: boolean) => void; ariaLabel: string }) {
   return (
     <Switch.Root
       checked={checked}

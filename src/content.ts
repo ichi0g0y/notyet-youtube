@@ -543,4 +543,3 @@ function isOwnMutation(record: MutationRecord): boolean {
   }
   return false;
 }
-
