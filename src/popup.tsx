@@ -2,9 +2,10 @@ import * as Switch from "@radix-ui/react-switch";
 import { type ReactNode, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useActionIconTheme } from "./icon-theme";
-import { ALL_SCOPES, getSettings, saveSettings, type Scope, type Settings } from "./storage";
+import { ALL_SCOPES, getMarkedCount, getSettings, saveSettings, type Scope, type Settings } from "./storage";
 
 type Locale = "en" | "ja";
+type MarkedCount = { count: number; cap: number };
 
 const MESSAGES = {
   en: {
@@ -13,6 +14,7 @@ const MESSAGES = {
     subtitle: "Tame your YouTube feeds by hiding videos you've already watched.",
     masterOn: "Filter on",
     masterOff: "Filter off",
+    markedCountLabel: "Marked",
     sectionScopes: "Where to filter",
     sectionExtras: "Extras",
     scope: {
@@ -39,6 +41,7 @@ const MESSAGES = {
     subtitle: "視聴済み動画を隠して YouTube フィードをすっきり保つ。",
     masterOn: "フィルタ ON",
     masterOff: "フィルタ OFF",
+    markedCountLabel: "視聴済み",
     sectionScopes: "どこをフィルタするか",
     sectionExtras: "その他",
     scope: {
@@ -63,13 +66,45 @@ const MESSAGES = {
 
 const locale: Locale = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
 const t = MESSAGES[locale];
+const MARKED_META_KEY = "fadee_marked_meta_v2";
+const MARKED_SHARD_PREFIX = "fadee_marked_v2_";
+
+function isMarkedStorageKey(key: string): boolean {
+  return key === MARKED_META_KEY || key.startsWith(MARKED_SHARD_PREFIX);
+}
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [markedCount, setMarkedCount] = useState<MarkedCount | null>(null);
 
   useEffect(() => {
     void getSettings().then(setSettings);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    let seq = 0;
+    const refresh = () => {
+      const mine = ++seq;
+      void getMarkedCount()
+        .then((next) => { if (active && mine === seq) setMarkedCount(next); })
+        .catch((error) => {
+          console.warn("Failed to refresh marked count", error);
+          if (active && mine === seq) setMarkedCount(null);
+        });
+    };
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+      if (areaName === "sync" && Object.keys(changes).some(isMarkedStorageKey)) refresh();
+    };
+
+    refresh();
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => {
+      active = false;
+      chrome.storage.onChanged.removeListener(onChanged);
+    };
+  }, []);
+
   useActionIconTheme();
 
   if (!settings) {
@@ -84,7 +119,7 @@ function App() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Hero settings={settings} onToggle={(enabled) => update({ enabled })} />
+      <Hero settings={settings} markedCount={markedCount} onToggle={(enabled) => update({ enabled })} />
 
       <Panel title={t.sectionScopes}>
         {ALL_SCOPES.map((scope) => (
@@ -142,7 +177,7 @@ function App() {
   );
 }
 
-function Hero({ settings, onToggle }: { settings: Settings; onToggle: (v: boolean) => void }) {
+function Hero({ settings, markedCount, onToggle }: { settings: Settings; markedCount: MarkedCount | null; onToggle: (v: boolean) => void }) {
   return (
     <header className="flex items-start justify-between gap-3 px-1 pt-1">
       <div className="min-w-0 flex-1">
@@ -151,12 +186,24 @@ function Hero({ settings, onToggle }: { settings: Settings; onToggle: (v: boolea
         </p>
         <h1 className="m-0 mt-1 text-2xl tracking-wide text-ink">{t.title}</h1>
         <p className="mt-1 text-[12px] leading-snug text-muted">{t.subtitle}</p>
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-accent">
-          {settings.enabled ? t.masterOn : t.masterOff}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-accent">
+            {settings.enabled ? t.masterOn : t.masterOff}
+          </p>
+          <MarkedCountBadge value={markedCount} />
+        </div>
       </div>
       <ToggleSwitch checked={settings.enabled} onChange={onToggle} ariaLabel={t.title} />
     </header>
+  );
+}
+
+function MarkedCountBadge({ value }: { value: MarkedCount | null }) {
+  if (!value) return null;
+  return (
+    <div className="rounded-full bg-[rgba(27,26,22,0.06)] px-2 py-0.5 text-[11px] font-semibold text-muted">
+      {t.markedCountLabel} {value.count.toLocaleString()} / {value.cap.toLocaleString()}
+    </div>
   );
 }
 
@@ -171,19 +218,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function ToggleRow({
-  label,
-  hint,
-  checked,
-  disabled,
-  onChange
-}: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  disabled?: boolean | undefined;
-  onChange: (v: boolean) => void;
-}) {
+function ToggleRow({ label, hint, checked, disabled, onChange }: { label: string; hint?: string; checked: boolean; disabled?: boolean | undefined; onChange: (v: boolean) => void }) {
   return (
     <label
       className={`flex items-center justify-between gap-3 rounded-xl px-2 py-2 transition ${
@@ -199,19 +234,7 @@ function ToggleRow({
   );
 }
 
-function NumberRow({
-  label,
-  value,
-  min,
-  max,
-  onChange
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (v: number) => void;
-}) {
+function NumberRow({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void }) {
   return (
     <label className="flex items-center justify-between gap-3 rounded-xl px-2 py-2">
       <div className="text-[13px] font-semibold text-ink">{label}</div>
@@ -230,17 +253,7 @@ function NumberRow({
   );
 }
 
-function SliderRow({
-  label,
-  hint,
-  value,
-  onChange
-}: {
-  label: string;
-  hint?: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
+function SliderRow({ label, hint, value, onChange }: { label: string; hint?: string; value: number; onChange: (v: number) => void }) {
   const percent = Math.round(value * 100);
   return (
     <div className="space-y-1 rounded-xl px-2 py-2">
@@ -263,17 +276,7 @@ function SliderRow({
   );
 }
 
-function ToggleSwitch({
-  checked,
-  disabled,
-  onChange,
-  ariaLabel
-}: {
-  checked: boolean;
-  disabled?: boolean | undefined;
-  onChange: (v: boolean) => void;
-  ariaLabel: string;
-}) {
+function ToggleSwitch({ checked, disabled, onChange, ariaLabel }: { checked: boolean; disabled?: boolean | undefined; onChange: (v: boolean) => void; ariaLabel: string }) {
   return (
     <Switch.Root
       checked={checked}
