@@ -72,7 +72,7 @@ export function getCardRoot(node: HTMLElement): HTMLElement {
 function isWatched(
   card: HTMLElement,
   threshold: number,
-  manuallyWatchedIds: string[]
+  manuallyWatchedIds: ReadonlySet<string>
 ): boolean {
   if (isManuallyWatched(card, manuallyWatchedIds)) return true;
   if (hasWatchedAriaLabel(card)) return true;
@@ -92,11 +92,11 @@ export function extractVideoId(card: HTMLElement): string | null {
   }
 }
 
-function isManuallyWatched(card: HTMLElement, manuallyWatchedIds: string[]): boolean {
-  if (manuallyWatchedIds.length === 0) return false;
+function isManuallyWatched(card: HTMLElement, manuallyWatchedIds: ReadonlySet<string>): boolean {
+  if (manuallyWatchedIds.size === 0) return false;
   const id = extractVideoId(card);
   if (!id) return false;
-  return manuallyWatchedIds.includes(id);
+  return manuallyWatchedIds.has(id);
 }
 
 function progressRatio(card: HTMLElement): number | null {
@@ -146,10 +146,14 @@ export function unique<T>(item: T, index: number, list: T[]): boolean {
   return list.indexOf(item) === index;
 }
 
-export function hideWatchedCards(scope: Scope, settings: Settings): void {
+export function hideWatchedCards(
+  scope: Scope,
+  settings: Settings,
+  manuallyWatchedIds: ReadonlySet<string>
+): void {
   const threshold = settings.watchedThreshold;
   for (const card of getCards(scope, settings)) {
-    if (isWatched(card, threshold, settings.manuallyWatchedIds)) {
+    if (isWatched(card, threshold, manuallyWatchedIds)) {
       card.setAttribute(HIDDEN_ATTR, "true");
       card.style.display = "none";
     } else if (card.getAttribute(HIDDEN_ATTR) === "true") {
