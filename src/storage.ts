@@ -113,13 +113,12 @@ async function readLocalState(): Promise<FadeeStateV1 | undefined> {
   return normalize(localStored[SYNC_KEY]);
 }
 
-async function removeSyncKey(key: string): Promise<void> {
-  try {
-    await chrome.storage.sync.remove(key);
-  } catch {
-    // Local migration already succeeded or was superseded; cleanup is best effort.
-  }
-}
+// Sync-side data is intentionally left in place after migrating to local:
+// chrome.storage.sync.remove() propagates across the user's signed-in Chromes,
+// which would wipe the source before other devices have a chance to migrate.
+// The orphaned sync entry is harmless (≤100KB quota, never read again on
+// already-migrated devices) and serves as the migration source for any later
+// device that updates to this version.
 
 export async function getSettings(): Promise<Settings> {
   const localState = await readLocalState();
@@ -129,12 +128,8 @@ export async function getSettings(): Promise<Settings> {
   if (synced[SYNC_KEY] !== undefined) {
     const migrated = normalize(synced[SYNC_KEY]);
     const newerLocalState = await readLocalState();
-    if (newerLocalState !== undefined) {
-      await removeSyncKey(SYNC_KEY);
-      return stripVersion(newerLocalState);
-    }
+    if (newerLocalState !== undefined) return stripVersion(newerLocalState);
     await chrome.storage.local.set({ [SYNC_KEY]: migrated });
-    await removeSyncKey(SYNC_KEY);
     return stripVersion(migrated);
   }
 
@@ -142,12 +137,8 @@ export async function getSettings(): Promise<Settings> {
   if (legacySynced[LEGACY_SYNC_KEY] !== undefined) {
     const migrated = normalize(legacySynced[LEGACY_SYNC_KEY]);
     const newerLocalState = await readLocalState();
-    if (newerLocalState !== undefined) {
-      await removeSyncKey(LEGACY_SYNC_KEY);
-      return stripVersion(newerLocalState);
-    }
+    if (newerLocalState !== undefined) return stripVersion(newerLocalState);
     await chrome.storage.local.set({ [SYNC_KEY]: migrated });
-    await removeSyncKey(LEGACY_SYNC_KEY);
     return stripVersion(migrated);
   }
 
