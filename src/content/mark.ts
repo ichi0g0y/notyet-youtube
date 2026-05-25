@@ -1,4 +1,4 @@
-import { markWatched, unmarkWatched, type Scope, type Settings } from "../storage";
+import { markWatched, unmarkWatched, type Scope } from "../storage";
 import { extractVideoId, getCardRoot, unique } from "./cards";
 import { createViewHideIcon, createViewIcon } from "./icons";
 import { t } from "./i18n";
@@ -22,14 +22,17 @@ function getMarkableCards(): HTMLElement[] {
     .filter(unique);
 }
 
-export function applyMarkButtons(scope: Scope | null, settings: Settings): void {
+export function applyMarkButtons(
+  scope: Scope | null,
+  manuallyWatchedIds: ReadonlySet<string>
+): void {
   if (!scope) return;
   for (const card of getMarkableCards()) {
     const id = extractVideoId(card);
     if (!id) continue;
     const container = findMenuContainer(card);
     if (!container) continue;
-    const marked = settings.manuallyWatchedIds.includes(id);
+    const marked = manuallyWatchedIds.has(id);
     upsertMarkButton(container, id, marked);
   }
 }

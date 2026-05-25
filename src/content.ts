@@ -13,6 +13,7 @@ import { applyMarkButtons, MARK_BTN_CLASS } from "./content/mark";
 import { BUTTON_ID, removeButton, upsertButton } from "./content/toolbar";
 
 let settings: Settings | null = null;
+let manuallyWatchedIdSet: ReadonlySet<string> = new Set();
 let currentUrl = location.href;
 let observer: MutationObserver | null = null;
 let filterTimer: number | undefined;
@@ -22,7 +23,7 @@ let markTimer: number | undefined;
 void start();
 
 async function start(): Promise<void> {
-  settings = await getSettings();
+  setSettings(await getSettings());
   syncPage();
   watchNavigation();
   watchDomChanges();
@@ -31,10 +32,15 @@ async function start(): Promise<void> {
     if (area !== "sync") return;
 
     void getSettings().then((nextSettings) => {
-      settings = nextSettings;
+      setSettings(nextSettings);
       syncPage();
     });
   });
+}
+
+function setSettings(nextSettings: Settings): void {
+  settings = nextSettings;
+  manuallyWatchedIdSet = new Set(nextSettings.manuallyWatchedIds);
 }
 
 function syncPage(): void {
@@ -51,7 +57,7 @@ function syncPage(): void {
   upsertButton(scope, settings, () => toggleCurrentTab());
   applyShortsSection(settings.removeShortsSection);
   applyHomeShelves(scope === "home" ? settings.hideHomeShelves : false);
-  applyMarkButtons(scope, settings);
+  applyMarkButtons(scope, manuallyWatchedIdSet);
 
   if (scope && settings.activeScopes[scope]) {
     scheduleFilter(scope);
@@ -64,14 +70,14 @@ function syncPage(): void {
 function scheduleFilter(scope: Scope): void {
   window.clearTimeout(filterTimer);
   filterTimer = window.setTimeout(() => {
-    if (settings) hideWatchedCards(scope, settings);
+    if (settings) hideWatchedCards(scope, settings, manuallyWatchedIdSet);
   }, 120);
 }
 
 function scheduleMarkButtons(scope: Scope): void {
   window.clearTimeout(markTimer);
   markTimer = window.setTimeout(() => {
-    if (settings) applyMarkButtons(scope, settings);
+    if (settings) applyMarkButtons(scope, manuallyWatchedIdSet);
   }, 200);
 }
 
@@ -96,7 +102,7 @@ async function toggleCurrentTab(): Promise<void> {
     }
   };
 
-  settings = nextSettings;
+  setSettings(nextSettings);
   await saveSettings(nextSettings);
   syncPage();
 }
