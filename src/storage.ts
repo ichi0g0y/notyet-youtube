@@ -135,7 +135,7 @@ function countShards(shards: string[][]): number {
 function evictOverflowShards(shards: string[][], cap: number): string[][] {
   const next = shards.filter((shard) => shard.length > 0);
   let count = countShards(next);
-  while (count >= cap + SHARD_SIZE && next.length > 0) {
+  while (count > cap && next.length > 0) {
     count -= next[0]?.length ?? 0;
     next.shift();
   }
@@ -158,11 +158,6 @@ async function removeStaleShards(previousShardCount: number, nextShardCount: num
   }
 }
 
-async function hasV2Meta(): Promise<boolean> {
-  const stored = await chrome.storage.sync.get(MARKED_META_KEY);
-  return stored[MARKED_META_KEY] !== undefined;
-}
-
 async function readMeta(): Promise<MarkedMeta | undefined> {
   const stored = await chrome.storage.sync.get(MARKED_META_KEY);
   if (stored[MARKED_META_KEY] === undefined) return undefined;
@@ -177,11 +172,7 @@ async function readShards(shardCount: number): Promise<string[][]> {
   return keys.map((key) => pickStringArray(stored[key]).slice(0, SHARD_SIZE));
 }
 
-async function writeMarkedShards(
-  shards: string[][],
-  cap: number,
-  previousShardCount: number
-): Promise<void> {
+async function writeMarkedShards(shards: string[][], cap: number, previousShardCount: number): Promise<void> {
   await chrome.storage.sync.set(markedPayload(shards, cap));
   await removeStaleShards(previousShardCount, shards.length);
 }
@@ -202,10 +193,21 @@ async function writeV2(settings: Settings, cap: number, previousShardCount: numb
 async function ensureV2Initialized(): Promise<void> {
   const localStored = await chrome.storage.local.get(LOCAL_V1_KEY);
   const hasLocalV1 = localStored[LOCAL_V1_KEY] !== undefined;
-  if (!(await hasV2Meta())) {
-    const initial = hasLocalV1 ? normalizeSettings(localStored[LOCAL_V1_KEY]) : DEFAULT_SETTINGS;
-    await writeV2(initial, DEFAULT_CAP, 0);
+  const meta = await readMeta();
+  if (meta !== undefined) {
+    if (hasLocalV1) {
+      const v2Ids = (await readShards(meta.shardCount)).flat();
+      const seen = new Set(v2Ids);
+      const v1Ids = normalizeSettings(localStored[LOCAL_V1_KEY]).manuallyWatchedIds;
+      const merged = v2Ids.concat(v1Ids.filter((id) => !seen.has(id) && !!seen.add(id)));
+      // Keep synced v2 settings; merge local marks for multi-device rollout safety.
+      await writeMarkedShards(evictOverflowShards(toShards(merged), meta.cap), meta.cap, meta.shardCount);
+      await chrome.storage.local.remove(LOCAL_V1_KEY);
+    }
+    return;
   }
+  const initial = hasLocalV1 ? normalizeSettings(localStored[LOCAL_V1_KEY]) : DEFAULT_SETTINGS;
+  await writeV2(initial, DEFAULT_CAP, 0);
   if (hasLocalV1) {
     await chrome.storage.local.remove(LOCAL_V1_KEY);
   }
