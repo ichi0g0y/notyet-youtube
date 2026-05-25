@@ -30,7 +30,7 @@ type FadeeStateV1 = Settings & { version: 1 };
 
 const SYNC_KEY = "fadee_state_v1";
 const LEGACY_SYNC_KEY = "notyet_state_v1";
-const MAX_MARKED_IDS = 500;
+const MAX_MARKED_IDS = 50000;
 
 const DEFAULT_SETTINGS: Settings = {
   enabled: true,
