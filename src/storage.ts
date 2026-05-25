@@ -30,7 +30,7 @@ type FadeeStateV1 = Settings & { version: 1 };
 
 const SYNC_KEY = "fadee_state_v1";
 const LEGACY_SYNC_KEY = "notyet_state_v1";
-const MAX_MARKED_IDS = 500;
+const MAX_MARKED_IDS = 50000;
 
 const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -107,15 +107,38 @@ function stripVersion(state: FadeeStateV1): Settings {
   return rest;
 }
 
+async function readLocalState(): Promise<FadeeStateV1 | undefined> {
+  const localStored = await chrome.storage.local.get(SYNC_KEY);
+  if (localStored[SYNC_KEY] === undefined) return undefined;
+  return normalize(localStored[SYNC_KEY]);
+}
+
+// Sync-side data is intentionally left in place after migrating to local:
+// chrome.storage.sync.remove() propagates across the user's signed-in Chromes,
+// which would wipe the source before other devices have a chance to migrate.
+// The orphaned sync entry is harmless (≤100KB quota, never read again on
+// already-migrated devices) and serves as the migration source for any later
+// device that updates to this version.
+
 export async function getSettings(): Promise<Settings> {
+  const localState = await readLocalState();
+  if (localState !== undefined) return stripVersion(localState);
+
   const synced = await chrome.storage.sync.get(SYNC_KEY);
-  if (synced[SYNC_KEY]) return stripVersion(normalize(synced[SYNC_KEY]));
+  if (synced[SYNC_KEY] !== undefined) {
+    const migrated = normalize(synced[SYNC_KEY]);
+    const newerLocalState = await readLocalState();
+    if (newerLocalState !== undefined) return stripVersion(newerLocalState);
+    await chrome.storage.local.set({ [SYNC_KEY]: migrated });
+    return stripVersion(migrated);
+  }
 
   const legacySynced = await chrome.storage.sync.get(LEGACY_SYNC_KEY);
-  if (legacySynced[LEGACY_SYNC_KEY]) {
+  if (legacySynced[LEGACY_SYNC_KEY] !== undefined) {
     const migrated = normalize(legacySynced[LEGACY_SYNC_KEY]);
-    await chrome.storage.sync.set({ [SYNC_KEY]: migrated });
-    await chrome.storage.sync.remove(LEGACY_SYNC_KEY);
+    const newerLocalState = await readLocalState();
+    if (newerLocalState !== undefined) return stripVersion(newerLocalState);
+    await chrome.storage.local.set({ [SYNC_KEY]: migrated });
     return stripVersion(migrated);
   }
 
@@ -124,6 +147,7 @@ export async function getSettings(): Promise<Settings> {
     "activeScopes",
     "activeTabs",
     "removeShortsSection",
+    "hideHomeShelves",
     "skipTopRecommendations",
     "topRecommendationsCount",
     "watchedThreshold",
@@ -133,7 +157,9 @@ export async function getSettings(): Promise<Settings> {
   const hasLegacy = legacyKeys.some((key) => legacy[key] !== undefined);
 
   const migrated = normalize(hasLegacy ? legacy : DEFAULT_SETTINGS);
-  await chrome.storage.sync.set({ [SYNC_KEY]: migrated });
+  const newerLocalState = await readLocalState();
+  if (newerLocalState !== undefined) return stripVersion(newerLocalState);
+  await chrome.storage.local.set({ [SYNC_KEY]: migrated });
   if (hasLegacy) {
     await chrome.storage.local.remove(legacyKeys);
   }
@@ -146,7 +172,7 @@ export async function saveSettings(settings: Settings): Promise<void> {
     ...settings,
     manuallyWatchedIds: settings.manuallyWatchedIds.slice(-MAX_MARKED_IDS)
   };
-  await chrome.storage.sync.set({ [SYNC_KEY]: next });
+  await chrome.storage.local.set({ [SYNC_KEY]: next });
 }
 
 export async function setEnabled(enabled: boolean): Promise<void> {
@@ -173,8 +199,6 @@ export async function unmarkWatched(videoId: string): Promise<void> {
 }
 
 export async function ensureDefaults(): Promise<void> {
-  const synced = await chrome.storage.sync.get(SYNC_KEY);
-  if (synced[SYNC_KEY]) return;
   await getSettings(); // triggers migration / initial set
 }
 
