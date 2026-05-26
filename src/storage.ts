@@ -1,9 +1,11 @@
 import { LOCAL_V1_KEY, SETTINGS_KEY } from "./storage/keys";
 import {
+  type LocaleOverride,
   type MarkedMeta,
   type Scope,
   type Settings,
   type StoredSettings,
+  ALL_LOCALE_OVERRIDES,
   ALL_SCOPES,
   DEFAULT_SETTINGS,
   normalizeSettings,
@@ -28,8 +30,8 @@ import {
   writeTailAppend
 } from "./storage/shards";
 
-export type { Scope, Settings };
-export { ALL_SCOPES };
+export type { LocaleOverride, Scope, Settings };
+export { ALL_LOCALE_OVERRIDES, ALL_SCOPES };
 export { MAX_ID_LENGTH, MAX_SHARD_COUNT, SHARD_BYTE_BUDGET } from "./storage/keys";
 export const STORAGE_SYNC_KEY = SETTINGS_KEY;
 
