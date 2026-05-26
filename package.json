@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && NODE_ENV=production bun run scripts/build.ts",
+    "pack": "bun run scripts/pack.ts",
     "check": "tsc --noEmit"
   },
   "devDependencies": {

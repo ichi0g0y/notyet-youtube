@@ -11,6 +11,14 @@ bun run build
 
 Load the generated `dist` directory from `chrome://extensions` with Developer mode enabled.
 
+## Packaging
+
+```sh
+bun run pack
+```
+
+Produces `fadee-<version>.zip` at repo root, ready to upload to the Chrome Web Store Developer Dashboard.
+
 ## Scope
 
 - Runs only on `https://www.youtube.com/*`
