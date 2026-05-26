@@ -19,6 +19,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "lolicon": "^0.4.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   }
