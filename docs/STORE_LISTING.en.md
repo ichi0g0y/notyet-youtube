@@ -15,29 +15,29 @@ Hide videos you've already watched on YouTube, so the unwatched ones are easy to
 
 fadee hides videos you've already watched on YouTube, so the unwatched ones stand out at a glance.
 
-### Features
+■ Features
 
 - Auto-hides videos YouTube reports as watched (with an adjustable "counts as watched after" threshold).
 - One-click "mark as watched" affordance on any video card for finer control.
 - Per-scope toggles: Channel · Videos / Shorts / Streams, Subscriptions, Home, and Search results.
 - Optional extras: hide all Shorts, hide themed Home shelves, keep top recommendations untouched.
-- Watched-video IDs are stored in `chrome.storage.sync`, so they follow your Chrome profile across devices via Chrome's own sync. fadee never sends them anywhere.
+- Watched-video IDs are stored in chrome.storage.sync, so they follow your Chrome profile across devices via Chrome's own sync. fadee never sends them anywhere.
 - Toolbar icon follows your system dark / light mode.
 - Popup shows current sync-storage usage and lets you clear the manually-marked list.
 
-### How to use
+■ How to use
 
 1. Visit YouTube and open any page in scope (channel videos, subscriptions, home, search).
 2. Videos that YouTube reports as watched are hidden automatically.
 3. To hide a video manually, click the "mark as watched" button fadee adds to its card.
 4. Open the toolbar popup to flip the master toggle, change scopes, adjust the watched threshold, or clear the manually-marked list.
 
-### Scope
+■ Scope
 
-- Runs only on `https://www.youtube.com/*`.
-- Stores only local extension settings and a manually-marked-video ID list via `chrome.storage`.
+- Runs only on https://www.youtube.com/*
+- Stores only local extension settings and a manually-marked-video ID list via chrome.storage.
 - Makes no external network requests of its own.
-- Open source: <https://github.com/ichi0g0y/fadee>
+- Open source: https://github.com/ichi0g0y/fadee
 
 ## Category
 
