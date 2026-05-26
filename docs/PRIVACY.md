@@ -28,7 +28,7 @@ fadee makes no network requests of its own. All operation is local to your brows
 
 - `storage` — persist the set of watched-video IDs and small UI preferences across sessions and devices via `chrome.storage.sync`.
 - `offscreen` — host a hidden document that reports the OS color-scheme preference (`matchMedia("(prefers-color-scheme: dark)")`) to the service worker, so the toolbar icon can follow your system dark/light mode setting.
-- `host_permissions: https://www.youtube.com/*` — required to read the channel-page DOM and apply the fade to watched videos.
+- `host_permissions: https://www.youtube.com/*` — required to read the channel-page DOM and hide watched videos.
 
 ## Contact
 

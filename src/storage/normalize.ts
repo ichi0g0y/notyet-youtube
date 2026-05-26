@@ -4,6 +4,10 @@ export type Scope = "channel-videos" | "channel-shorts" | "channel-live" | "subs
 
 export const ALL_SCOPES: readonly Scope[] = ["channel-videos", "channel-shorts", "channel-live", "subscriptions", "home", "search"];
 
+export type LocaleOverride = "auto" | "en" | "ja";
+
+export const ALL_LOCALE_OVERRIDES: readonly LocaleOverride[] = ["auto", "en", "ja"];
+
 export type Settings = {
   enabled: boolean;
   activeScopes: Record<Scope, boolean>;
@@ -12,6 +16,7 @@ export type Settings = {
   skipTopRecommendations: boolean;
   topRecommendationsCount: number;
   watchedThreshold: number;
+  localeOverride: LocaleOverride;
   manuallyWatchedIds: string[];
 };
 
@@ -28,8 +33,13 @@ export const DEFAULT_SETTINGS: Settings = {
   skipTopRecommendations: false,
   topRecommendationsCount: 12,
   watchedThreshold: 0,
+  localeOverride: "auto",
   manuallyWatchedIds: []
 };
+
+function pickLocaleOverride(value: unknown, fallback: LocaleOverride): LocaleOverride {
+  return value === "auto" || value === "en" || value === "ja" ? value : fallback;
+}
 
 function pickBool(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
@@ -81,6 +91,7 @@ export function normalizeSettings(raw: unknown): Settings {
       DEFAULT_SETTINGS.topRecommendationsCount
     ),
     watchedThreshold: pickNumber(v.watchedThreshold, DEFAULT_SETTINGS.watchedThreshold),
+    localeOverride: pickLocaleOverride(v.localeOverride, DEFAULT_SETTINGS.localeOverride),
     manuallyWatchedIds: pickStringArray(v.manuallyWatchedIds)
   };
 }

@@ -1,11 +1,16 @@
 import * as Switch from "@radix-ui/react-switch";
 import { DeleteIcon } from "lolicon/Delete";
-import { type ReactNode, StrictMode, useEffect, useRef, useState } from "react";
+import { type ReactNode, StrictMode, createContext, useContext, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ALL_SCOPES, clearMarked, getSettings, getSyncStorageUsage, saveSettings, type Scope, type Settings } from "./storage";
+import { ALL_LOCALE_OVERRIDES, ALL_SCOPES, clearMarked, getSettings, getSyncStorageUsage, saveSettings, type LocaleOverride, type Scope, type Settings } from "./storage";
 
 type Locale = "en" | "ja";
 type SyncUsage = { count: number; bytesInUse: number; bytesQuota: number };
+
+function resolveLocale(override: LocaleOverride): Locale {
+  if (override === "en" || override === "ja") return override;
+  return (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
+}
 
 const SYNC_BYTES_WARNING_RATIO = 0.8;
 
@@ -34,7 +39,8 @@ const MESSAGES = {
     clearAction: "Clear",
     clearTooltip: "Remove every manually-marked video.",
     clearConfirm: (n: number) => `Clear all ${n} manually-marked videos? This cannot be undone.`,
-    syncUsageTooltip: "Free Chrome sync storage. Used by your settings and manually-marked video IDs (Chrome cap: 100 KB, syncs across devices)."
+    syncUsageTooltip: "Free Chrome sync storage. Used by your settings and manually-marked video IDs (Chrome cap: 100 KB, syncs across devices).",
+    localeTooltip: "Popup language. Auto follows your browser language."
   },
   ja: {
     title: "fadee",
@@ -60,12 +66,16 @@ const MESSAGES = {
     clearAction: "クリア",
     clearTooltip: "手動マーク済の動画を全てクリアする。",
     clearConfirm: (n: number) => `手動マーク済 ${n} 件をクリアしますか？取り消しはできません。`,
-    syncUsageTooltip: "Chrome sync 領域の空き容量。手動マーク済み動画ID + 設定が使用中（Chrome 上限 100 KB、端末間で同期される）。"
+    syncUsageTooltip: "Chrome sync 領域の空き容量。手動マーク済み動画ID + 設定が使用中（Chrome 上限 100 KB、端末間で同期される）。",
+    localeTooltip: "ポップアップの表示言語。Auto はブラウザの言語に追従。"
   }
 } as const;
 
-const locale: Locale = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
-const t = MESSAGES[locale];
+const LOCALE_LABELS: Record<LocaleOverride, string> = { auto: "Auto", en: "EN", ja: "JA" };
+
+type Messages = (typeof MESSAGES)[Locale];
+const MessagesContext = createContext<Messages>(MESSAGES.en);
+const useT = (): Messages => useContext(MessagesContext);
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -103,6 +113,9 @@ function App() {
     return <div className="py-16 text-center text-base text-muted">…</div>;
   }
 
+  const locale = resolveLocale(settings.localeOverride);
+  const t = MESSAGES[locale];
+
   const update = (patch: Partial<Settings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -110,71 +123,78 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <Hero settings={settings} onToggle={(enabled) => update({ enabled })} />
+    <MessagesContext.Provider value={t}>
+      <div className="flex flex-col gap-3">
+        <Hero settings={settings} onToggle={(enabled) => update({ enabled })} />
 
-      <Panel title={t.sectionScopes}>
-        {ALL_SCOPES.map((scope) => (
+        <Panel title={t.sectionScopes}>
+          {ALL_SCOPES.map((scope) => (
+            <ToggleRow
+              key={scope}
+              label={t.scope[scope]}
+              checked={settings.activeScopes[scope]}
+              disabled={!settings.enabled}
+              onChange={(checked) =>
+                update({ activeScopes: { ...settings.activeScopes, [scope]: checked } })
+              }
+            />
+          ))}
+        </Panel>
+
+        <Panel title={t.sectionExtras}>
           <ToggleRow
-            key={scope}
-            label={t.scope[scope]}
-            checked={settings.activeScopes[scope]}
+            label={t.removeShortsSection}
+            hint={t.removeShortsSectionHint}
+            checked={settings.removeShortsSection}
             disabled={!settings.enabled}
-            onChange={(checked) =>
-              update({ activeScopes: { ...settings.activeScopes, [scope]: checked } })
-            }
+            onChange={(checked) => update({ removeShortsSection: checked })}
           />
-        ))}
-      </Panel>
-
-      <Panel title={t.sectionExtras}>
-        <ToggleRow
-          label={t.removeShortsSection}
-          hint={t.removeShortsSectionHint}
-          checked={settings.removeShortsSection}
-          disabled={!settings.enabled}
-          onChange={(checked) => update({ removeShortsSection: checked })}
-        />
-        <ToggleRow
-          label={t.hideHomeShelves}
-          hint={t.hideHomeShelvesHint}
-          checked={settings.hideHomeShelves}
-          disabled={!settings.enabled}
-          onChange={(checked) => update({ hideHomeShelves: checked })}
-        />
-        <ToggleRow
-          label={t.skipTopRecommendations}
-          hint={t.skipTopRecommendationsHint}
-          checked={settings.skipTopRecommendations}
-          disabled={!settings.enabled}
-          onChange={(checked) => update({ skipTopRecommendations: checked })}
-        />
-        {settings.skipTopRecommendations && (
-          <NumberRow
-            label={t.topCountLabel}
-            value={settings.topRecommendationsCount}
-            min={1}
-            max={60}
-            onChange={(value) => update({ topRecommendationsCount: value })}
+          <ToggleRow
+            label={t.hideHomeShelves}
+            hint={t.hideHomeShelvesHint}
+            checked={settings.hideHomeShelves}
+            disabled={!settings.enabled}
+            onChange={(checked) => update({ hideHomeShelves: checked })}
           />
-        )}
-        <SliderRow
-          label={t.watchedThresholdLabel}
-          hint={t.watchedThresholdHint}
-          value={settings.watchedThreshold}
-          onChange={(value) => update({ watchedThreshold: value })}
-        />
-      </Panel>
+          <ToggleRow
+            label={t.skipTopRecommendations}
+            hint={t.skipTopRecommendationsHint}
+            checked={settings.skipTopRecommendations}
+            disabled={!settings.enabled}
+            onChange={(checked) => update({ skipTopRecommendations: checked })}
+          />
+          {settings.skipTopRecommendations && (
+            <NumberRow
+              label={t.topCountLabel}
+              value={settings.topRecommendationsCount}
+              min={1}
+              max={60}
+              onChange={(value) => update({ topRecommendationsCount: value })}
+            />
+          )}
+          <SliderRow
+            label={t.watchedThresholdLabel}
+            hint={t.watchedThresholdHint}
+            value={settings.watchedThreshold}
+            onChange={(value) => update({ watchedThreshold: value })}
+          />
+        </Panel>
 
-      <div className="flex items-center justify-end gap-2 px-0.5">
-        <SyncUsageBadge value={syncUsage} />
-        <ClearMarksButton count={syncUsage?.count ?? 0} />
+        <div className="flex items-center justify-end gap-2 px-0.5">
+          <LocaleSelector
+            value={settings.localeOverride}
+            onChange={(localeOverride) => update({ localeOverride })}
+          />
+          <SyncUsageBadge value={syncUsage} />
+          <ClearMarksButton count={syncUsage?.count ?? 0} />
+        </div>
       </div>
-    </div>
+    </MessagesContext.Provider>
   );
 }
 
 function Hero({ settings, onToggle }: { settings: Settings; onToggle: (v: boolean) => void }) {
+  const t = useT();
   return (
     <header className="flex items-start justify-between gap-3 px-0.5 pb-0.5">
       <TitleLogo />
@@ -187,6 +207,7 @@ function Hero({ settings, onToggle }: { settings: Settings; onToggle: (v: boolea
 }
 
 function TitleLogo() {
+  const t = useT();
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -285,6 +306,7 @@ function Tooltip({ children, text, align = "right", clamp = true }: { children: 
 }
 
 function SyncUsageBadge({ value }: { value: SyncUsage | null }) {
+  const t = useT();
   if (!value) return null;
   const freeKb = ((value.bytesQuota - value.bytesInUse) / 1024).toFixed(1);
   const quotaKb = Math.round(value.bytesQuota / 1024);
@@ -299,7 +321,35 @@ function SyncUsageBadge({ value }: { value: SyncUsage | null }) {
   );
 }
 
+function LocaleSelector({ value, onChange }: { value: LocaleOverride; onChange: (v: LocaleOverride) => void }) {
+  const t = useT();
+  return (
+    <Tooltip text={t.localeTooltip} align="center">
+      <div role="radiogroup" aria-label="popup language" className="inline-flex overflow-hidden rounded-md border border-outline bg-bg-2">
+        {ALL_LOCALE_OVERRIDES.map((option) => {
+          const selected = option === value;
+          return (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(option)}
+              className={`px-1.5 py-0.5 text-[11px] font-medium leading-none transition-colors ${
+                selected ? "bg-accent text-white" : "cursor-pointer text-muted hover:text-ink"
+              }`}
+            >
+              {LOCALE_LABELS[option]}
+            </button>
+          );
+        })}
+      </div>
+    </Tooltip>
+  );
+}
+
 function ClearMarksButton({ count }: { count: number }) {
+  const t = useT();
   const disabled = count <= 0;
   const handleClick = () => {
     if (disabled) return;

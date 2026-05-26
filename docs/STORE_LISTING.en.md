@@ -9,7 +9,7 @@ fadee
 
 ## Short description (≤132 chars)
 
-Fade out videos you've already watched on YouTube, so the unwatched ones are easy to spot.
+Hide videos you've already watched on YouTube, so the unwatched ones are easy to spot.
 
 ## Detailed description
 
@@ -17,7 +17,7 @@ fadee hides videos you've already watched on YouTube, so the unwatched ones stan
 
 ### Features
 
-- Auto-fades videos YouTube reports as watched (with an adjustable "counts as watched after" threshold).
+- Auto-hides videos YouTube reports as watched (with an adjustable "counts as watched after" threshold).
 - One-click "mark as watched" affordance on any video card for finer control.
 - Per-scope toggles: Channel · Videos / Shorts / Streams, Subscriptions, Home, and Search results.
 - Optional extras: hide all Shorts, hide themed Home shelves, keep top recommendations untouched.
@@ -28,8 +28,8 @@ fadee hides videos you've already watched on YouTube, so the unwatched ones stan
 ### How to use
 
 1. Visit YouTube and open any page in scope (channel videos, subscriptions, home, search).
-2. Videos that YouTube reports as watched fade automatically.
-3. To fade a video manually, click the "mark as watched" button fadee adds to its card.
+2. Videos that YouTube reports as watched are hidden automatically.
+3. To hide a video manually, click the "mark as watched" button fadee adds to its card.
 4. Open the toolbar popup to flip the master toggle, change scopes, adjust the watched threshold, or clear the manually-marked list.
 
 ### Scope
@@ -49,13 +49,13 @@ English
 
 ## Single-purpose statement
 
-fadee fades out videos on YouTube that the user has already watched (either auto-detected from YouTube's own playback progress or explicitly marked by the user), so the remaining unwatched videos are easier to find.
+fadee hides videos on YouTube that the user has already watched (either auto-detected from YouTube's own playback progress or explicitly marked by the user), so the remaining unwatched videos are easier to find.
 
 ## Permission justifications
 
 - **storage** — fadee persists the user's manually-marked video ID list and a handful of small UI preferences (master toggle, per-scope toggles, watched threshold) via `chrome.storage.sync`. Without it the watched list and settings would not survive a reload.
 - **offscreen** — fadee hosts a tiny offscreen document that reads the OS color-scheme preference via `matchMedia("(prefers-color-scheme: dark)")` and forwards the result to the service worker. This is the only MV3-permitted way for a service-worker background context to observe `matchMedia`, and is used purely so the toolbar icon can swap between light and dark variants.
-- **host_permissions: https://www.youtube.com/\*** — fadee reads YouTube page DOM nodes to identify video cards, inject the per-card "mark as watched" affordance, and apply the fade CSS to watched cards.
+- **host_permissions: https://www.youtube.com/\*** — fadee reads YouTube page DOM nodes to identify video cards, inject the per-card "mark as watched" affordance, and apply the hide CSS to watched cards.
 
 ## Data usage disclosure
 
