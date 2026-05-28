@@ -16,11 +16,12 @@ async function ensureThemeWatcher(): Promise<void> {
   });
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  void ensureDefaults();
-  void ensureThemeWatcher();
-});
+void ensureDefaults();
+void ensureThemeWatcher();
 
+// Registering onStartup is what wakes the service worker on browser launch;
+// the body is redundant with the top-level call above but the registration
+// itself is the wake-up trigger that must stay.
 chrome.runtime.onStartup.addListener(() => {
   void ensureThemeWatcher();
 });

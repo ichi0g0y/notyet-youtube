@@ -24,3 +24,7 @@ Produces `fadee-<version>.zip` at repo root, ready to upload to the Chrome Web S
 - Runs only on `https://www.youtube.com/*`
 - Stores only local extension settings with `chrome.storage`
 - Makes no external network requests
+
+## History
+
+See [history.md](history.md) for the release changelog.
