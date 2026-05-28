@@ -55,7 +55,7 @@ function syncPage(): void {
 
   const scope = detectScope();
   upsertButton(scope, settings, () => toggleCurrentTab());
-  applyShortsSection(settings.removeShortsSection);
+  applyShortsSection(settings.removeShortsSection && !isOnShortsWatchPage());
   applyHomeShelves(scope === "home" ? settings.hideHomeShelves : false);
   applyMarkButtons(scope, manuallyWatchedIdSet);
 
@@ -83,6 +83,10 @@ function scheduleMarkButtons(scope: Scope): void {
 
 function applyShortsSection(hide: boolean): void {
   document.documentElement.setAttribute("data-fadee-hide-shorts", String(hide));
+}
+
+function isOnShortsWatchPage(): boolean {
+  return /^\/shorts\/[^/]+/.test(location.pathname);
 }
 
 function applyHomeShelves(hide: boolean): void {

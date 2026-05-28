@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "fadee",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hide watched videos on YouTube channel pages.",
   "permissions": ["storage", "offscreen"],
   "host_permissions": ["https://www.youtube.com/*"],
