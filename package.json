@@ -1,6 +1,6 @@
 {
   "name": "fadee",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Hide watched videos on YouTube channel pages.",
   "type": "module",
